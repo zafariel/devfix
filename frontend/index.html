@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>DEVFIX — Diagnóstico para sites</title>
+
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+    <header class="navbar">
+        <div class="logo">DEV<span>FIX</span></div>
+
+        <nav>
+            <a href="#como-funciona">Como funciona</a>
+            <a href="#recursos">Recursos</a>
+        </nav>
+    </header>
+
+    <main>
+
+        <section class="hero">
+
+            <div class="badge">
+                DEVFIX
+            </div>
+
+            <h1>
+                Encontre os problemas<br>
+                do seu site.
+            </h1>
+
+            <p>
+                Analise uma URL e descubra problemas de SEO,
+                acessibilidade e estrutura do seu site.
+            </p>
+
+            <div class="analyzer">
+                <input
+                    type="url"
+                    id="urlInput"
+                    placeholder="https://seusite.com"
+                >
+
+                <button id="analyzeButton">
+                    Analisar site
+                </button>
+            </div>
+
+            <p id="status"></p>
+
+        </section>
+
+
+        <section id="results" class="results hidden">
+
+            <div class="results-header">
+                <div>
+                    <span class="small-label">RESULTADO</span>
+                    <h2>Diagnóstico</h2>
+                </div>
+
+                <div id="score" class="score">
+                    --
+                </div>
+            </div>
+
+            <div id="issues"></div>
+
+        </section>
+
+
+        <section id="como-funciona" class="section">
+
+            <span class="small-label">COMO FUNCIONA</span>
+
+            <h2>
+                Diagnóstico simples.<br>
+                Informação útil.
+            </h2>
+
+            <div class="steps">
+
+                <div class="step">
+                    <strong>01</strong>
+                    <h3>Digite a URL</h3>
+                    <p>
+                        Informe o endereço do site que você quer analisar.
+                    </p>
+                </div>
+
+                <div class="step">
+                    <strong>02</strong>
+                    <h3>DEVFIX analisa</h3>
+                    <p>
+                        O sistema verifica a estrutura e encontra problemas.
+                    </p>
+                </div>
+
+                <div class="step">
+                    <strong>03</strong>
+                    <h3>Corrija</h3>
+                    <p>
+                        Receba uma explicação e uma recomendação para cada problema.
+                    </p>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <footer>
+        <div class="logo">DEV<span>FIX</span></div>
+        <p>Diagnóstico inteligente para desenvolvedores.</p>
+    </footer>
+
+    <script src="/static/app.js"></script>
+
+</body>
+</html>
