@@ -40,7 +40,7 @@ def analyze():
         result = fetch_url(url)
 
         html_analysis = analyze_html(result["html"])
-        issues = run_checks(result["html"])
+        issues = run_checks(result["html"], result["final_url"])
 
         return jsonify({
             "url": result["final_url"],

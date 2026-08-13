@@ -94,6 +94,29 @@ function renderResults(data) {
 
     issues.forEach(issue => {
 
+const severityLabels = {
+    high: "Alta",
+    medium: "Média",
+    low: "Baixa"
+};
+
+const categoryLabels = {
+    seo: "SEO",
+    accessibility: "Acessibilidade",
+    html: "HTML",
+    css: "CSS",
+    javascript: "JavaScript",
+    mobile: "Mobile",
+    performance: "Performance",
+    security: "Segurança"
+};
+
+const severityLabel =
+    severityLabels[issue.severity] || issue.severity;
+
+const categoryLabel =
+    categoryLabels[issue.category] || issue.category;
+
         if (issue.severity === "high") {
             score -= 20;
         }
@@ -111,17 +134,35 @@ function renderResults(data) {
         element.className = "issue";
 
         element.innerHTML = `
-            <div class="issue-top">
-                <h3>${escapeHtml(issue.message)}</h3>
-                <span class="severity">
-                    ${escapeHtml(issue.severity)}
-                </span>
-            </div>
+    <div class="issue-top">
+        <h3>⚠️ ${escapeHtml(issue.message)}</h3>
 
-            <p>
-                ${escapeHtml(issue.recommendation)}
-            </p>
-        `;
+        <span class="severity">
+    Prioridade: ${escapeHtml(severityLabel)}
+</span>
+
+    </div>
+
+    <p>
+        <strong>Categoria:</strong>
+        ${escapeHtml(categoryLabel)}
+    </p>
+
+    <p>
+        <strong>Problema:</strong><br>
+        ${escapeHtml(issue.problem)}
+    </p>
+
+    <p>
+        <strong>Como melhorar:</strong><br>
+        ${escapeHtml(issue.recommendation)}
+    </p>
+
+    <p>
+        <strong>Exemplo:</strong><br>
+        <code>${escapeHtml(issue.example)}</code>
+    </p>
+`;
 
         issuesContainer.appendChild(element);
     });
