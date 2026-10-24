@@ -2,3 +2,30 @@
 __pycache__/
 *.pyc
 .env
+
+# Bancos de dados locais
+*.db
+*.sqlite
+*.sqlite3
+
+# Backups locais
+*.backup
+*.backup*
+backend.backup*/
+
+# Arquivos compactados locais
+*.zip
+
+# Segredos e configurações locais
+.env.*
+!.env.example
+
+# Pastas de backup locais
+/backend.backup*/
+
+# Cópias de segurança locais do Gitignore
+/.gitignore.backup*
+
+# Arquivos temporários de editor
+*.swp
+*.tmp

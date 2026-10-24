@@ -1,21 +1,11 @@
 import os
+import sqlite3
 
-import psycopg
-from dotenv import load_dotenv
-
-load_dotenv()
-
-
-def get_database_url():
-    database_url = os.getenv("DATABASE_URL")
-
-    if not database_url:
-        raise RuntimeError(
-            "DATABASE_URL não encontrada."
-        )
-
-    return database_url
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATABASE_PATH = os.path.join(BASE_DIR, "devfix.db")
 
 
 def get_connection():
-    return psycopg.connect(get_database_url())
+    connection = sqlite3.connect(DATABASE_PATH)
+    connection.row_factory = sqlite3.Row
+    return connection

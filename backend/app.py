@@ -5,10 +5,21 @@ import os
 from backend.analyzer.http import fetch_url
 from backend.analyzer.html import analyze_html
 from backend.analyzer.checks import run_checks
-
+from backend.ai.service import AIService
+from backend.auth.routes import auth_bp
+from dotenv import load_dotenv
 
 app = Flask(__name__, static_folder=None)
 
+load_dotenv()
+
+app.config["SECRET_KEY"] = os.getenv("FLASK_SECRET_KEY")
+
+if not app.config["SECRET_KEY"]:
+    raise RuntimeError("FLASK_SECRET_KEY não encontrada.")
+
+app.register_blueprint(auth_bp)
+ai_service = AIService()
 
 FRONTEND_DIR = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "frontend")
@@ -19,6 +30,15 @@ FRONTEND_DIR = os.path.abspath(
 def home():
     return send_from_directory(FRONTEND_DIR, "index.html")
 
+
+STATIC_DIR = os.path.join(FRONTEND_DIR, "static")
+
+@app.get("/static/themes/<path:filename>")
+def static_theme_files(filename):
+    return send_from_directory(
+        os.path.join(STATIC_DIR, "themes"),
+        filename
+    )
 
 @app.get("/static/<path:filename>")
 def static_files(filename):
@@ -40,7 +60,29 @@ def analyze():
         result = fetch_url(url)
 
         html_analysis = analyze_html(result["html"])
-        issues = run_checks(result["html"], result["final_url"])
+        issues = run_checks(
+            result["html"],
+            result["final_url"]
+        )
+
+        # A Claude apenas comenta os checks encontrados.
+        # Se a IA estiver indisponível, a análise continua normalmente.
+        try:
+            ai_comments = ai_service.comment_checks(issues)
+
+            comments_by_check = {
+                item.get("check"): item.get("comment")
+                for item in ai_comments
+            }
+
+            for issue in issues:
+                check_id = issue.get("check")
+
+                if check_id in comments_by_check:
+                    issue["ai_comment"] = comments_by_check[check_id]
+
+        except Exception as e:
+            print(f"CLAUDE ERROR: {e}")
 
         return jsonify({
             "url": result["final_url"],
@@ -54,6 +96,36 @@ def analyze():
         return jsonify({
             "error": "Could not access URL"
         }), 502
+
+
+@app.post("/api/chat")
+def chat():
+    data = request.get_json()
+
+    if not data or "message" not in data:
+        return jsonify({
+            "error": "Message is required"
+        }), 400
+
+    message = data["message"]
+    context = data.get("context")
+
+    try:
+        response = ai_service.ask_chat(
+            message=message,
+            context=context
+        )
+
+        return jsonify({
+            "response": response
+        })
+
+    except Exception as e:
+        print(f"OPENAI ERROR: {e}")
+
+        return jsonify({
+            "error": "AI service unavailable"
+        }), 503
 
 
 if __name__ == "__main__":
