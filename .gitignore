@@ -29,3 +29,4 @@ backend.backup*/
 # Arquivos temporários de editor
 *.swp
 *.tmp
+.env.local
