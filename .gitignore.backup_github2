@@ -1,0 +1,21 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+
+# Bancos de dados locais
+*.db
+*.sqlite
+*.sqlite3
+
+# Backups locais
+*.backup
+*.backup*
+backend.backup*/
+
+# Arquivos compactados locais
+*.zip
+
+# Segredos e configurações locais
+.env.*
+!.env.example

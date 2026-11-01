@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="white">
+
+<head>
+    <link rel="icon" type="image/png" href="/static/favicon.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DEVFIX — Diagnóstico para sites</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+<header class="navbar">
+
+    <div class="logo">DEV<span>FIX</span></div>
+
+    <nav>
+        <a href="#como-funciona">Como funciona</a>
+        <a href="#recursos">Recursos</a>
+    </nav>
+
+    <div class="theme-picker">
+
+        <button id="themeToggle" class="theme-toggle" type="button">
+            Temas
+        </button>
+
+        <div id="themeMenu" class="theme-menu hidden">
+
+            <button class="theme-option" data-theme-option="black" type="button">Modo preto</button>
+            <button class="theme-option" data-theme-option="white" type="button">Modo branco</button>
+            <button class="theme-option" data-theme-option="red" type="button">Modo vermelho</button>
+            <button class="theme-option" data-theme-option="blue" type="button">Modo azul</button>
+            <button class="theme-option" data-theme-option="green" type="button">Modo verde</button>
+            <button class="theme-option" data-theme-option="purple" type="button">Modo roxo</button>
+            <button class="theme-option" data-theme-option="orange" type="button">Modo laranja</button>
+            <button class="theme-option" data-theme-option="pink" type="button">Modo rosa</button>
+            <button class="theme-option" data-theme-option="cyan" type="button">Modo ciano</button>
+            <button class="theme-option" data-theme-option="gold" type="button">Modo dourado</button>
+
+        </div>
+    </div>
+
+</header>
+
+<main>
+
+    <section class="hero">
+
+        <div class="badge">DEVFIX</div>
+
+        <h1>
+            Encontre os problemas<br>
+            do seu site.
+        </h1>
+
+        <p>
+            Analise uma URL e descubra problemas de SEO,
+            acessibilidade e estrutura do seu site.
+        </p>
+
+        <div class="analyzer">
+
+            <input
+                type="url"
+                id="urlInput"
+                name="url"
+                placeholder="https://seusite.com"
+                autocomplete="url"
+                aria-label="URL do site para análise">
+
+            <button id="analyzeButton" type="button">
+                Analisar site
+            </button>
+
+        </div>
+
+        <p id="status"></p>
+
+    </section>
+
+    <section id="results" class="results hidden">
+
+        <div class="results-header">
+
+            <div>
+                <span class="small-label">RESULTADO</span>
+                <h2>Diagnóstico</h2>
+            </div>
+
+            <div id="score" class="score">
+                --
+            </div>
+
+        </div>
+
+        <div id="issues"></div>
+
+    </section>
+
+    <section id="chat" class="chat hidden">
+
+        <div class="chat-header">
+
+            <div>
+                <span class="small-label">DEVFIX ASSISTANT</span>
+                <h2>Precisa de ajuda?</h2>
+            </div>
+
+            <button
+                id="closeChat"
+                class="chat-close"
+                type="button"
+                aria-label="Fechar chat">
+                X
+            </button>
+
+        </div>
+
+        <div id="chatMessages" class="chat-messages">
+
+            <div class="chat-message assistant">
+
+                <strong>DEVFIX</strong>
+
+                <p>
+                    Olá! Posso ajudar você a entender os problemas
+                    encontrados na análise.
+                </p>
+
+            </div>
+
+        </div>
+
+        <div class="chat-input">
+
+            <input
+                id="chatInput"
+                type="text"
+                name="message"
+                placeholder="Pergunte sobre o diagnóstico..."
+                autocomplete="on"
+                aria-label="Mensagem para o assistente">
+
+            <button id="chatButton" type="button">
+                Enviar
+            </button>
+
+        </div>
+
+    </section>
+
+    <button
+        id="openChat"
+        class="chat-open"
+        type="button"
+        aria-label="Abrir chat">
+        💬
+    </button>
+
+    <section id="como-funciona" class="section">
+
+        <span class="small-label">COMO FUNCIONA</span>
+
+        <h2>
+            Diagnóstico simples.<br>
+            Informação útil.
+        </h2>
+
+        <div class="steps">
+
+            <div class="step">
+                <strong>01</strong>
+                <h3>Digite a URL</h3>
+                <p>
+                    Informe o endereço do site que você quer analisar.
+                </p>
+            </div>
+
+            <div class="step">
+                <strong>02</strong>
+                <h3>DEVFIX analisa</h3>
+                <p>
+                    O sistema verifica a estrutura e encontra problemas.
+                </p>
+            </div>
+
+            <div class="step">
+                <strong>03</strong>
+                <h3>Corrija</h3>
+                <p>
+                    Receba uma explicação e uma recomendação para cada problema.
+                </p>
+            </div>
+
+        </div>
+
+    </section>
+
+</main>
+
+<footer>
+
+    <div class="logo">
+        DEV<span>FIX</span>
+    </div>
+
+    <p>
+        Diagnóstico inteligente para desenvolvedores.
+    </p>
+
+</footer>
+
+<script src="/static/app.js"></script>
+
+</body>
+</html>

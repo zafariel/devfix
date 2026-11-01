@@ -1,0 +1,488 @@
+let currentAnalysis = null;
+
+const chat = document.getElementById("chat");
+const closeChat = document.getElementById("closeChat");
+const openChat = document.getElementById("openChat");
+const chatInput = document.getElementById("chatInput");
+const chatButton = document.getElementById("chatButton");
+const chatMessages = document.getElementById("chatMessages");
+
+const button = document.getElementById("analyzeButton");
+const input = document.getElementById("urlInput");
+const status = document.getElementById("status");
+const results = document.getElementById("results");
+const issuesContainer = document.getElementById("issues");
+const scoreElement = document.getElementById("score");
+
+const themeToggle = document.getElementById("themeToggle");
+const themeMenu = document.getElementById("themeMenu");
+const themeOptions = document.querySelectorAll(".theme-option");
+
+
+/* =========================
+   ANÁLISE
+========================= */
+
+button.addEventListener("click", analyze);
+
+input.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+        analyze();
+    }
+});
+
+
+async function analyze() {
+
+    const url = input.value.trim();
+
+    if (!url) {
+        status.textContent = "Digite uma URL.";
+        return;
+    }
+
+    status.textContent = "Analisando site...";
+    button.disabled = true;
+
+    results.classList.add("hidden");
+
+    try {
+
+        const response = await fetch("/analyze", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                url: url
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || "Erro ao analisar.");
+        }
+
+        renderResults(data);
+
+        status.textContent = "Análise concluída.";
+
+    } catch (error) {
+
+        console.error("Erro na análise:", error);
+        status.textContent = error.message;
+
+    } finally {
+
+        button.disabled = false;
+    }
+}
+
+
+/* =========================
+   RESULTADOS
+========================= */
+
+function renderResults(data) {
+
+    currentAnalysis = data;
+
+    results.classList.remove("hidden");
+
+    chat.classList.remove("hidden");
+    chat.style.display = "block";
+    openChat.style.display = "none";
+
+    const issues = data.issues || [];
+
+    issuesContainer.innerHTML = "";
+
+    if (issues.length === 0) {
+
+        issuesContainer.innerHTML = `
+            <div class="issue">
+                <h3>✓ Nenhum problema encontrado</h3>
+                <p>
+                    O DEVFIX não encontrou problemas nas verificações atuais.
+                </p>
+            </div>
+        `;
+
+        scoreElement.textContent = "100";
+
+        return;
+    }
+
+    let score = 100;
+
+    const severityLabels = {
+        high: "Alta",
+        medium: "Média",
+        low: "Baixa"
+    };
+
+    const issueTypeLabels = {
+        erro: "Erro",
+        aviso: "Aviso",
+        informação: "Informação"
+    };
+
+    const categoryLabels = {
+        seo: "SEO",
+        accessibility: "Acessibilidade",
+        html: "HTML",
+        css: "CSS",
+        javascript: "JavaScript",
+        mobile: "Mobile",
+        performance: "Performance",
+        security: "Segurança"
+    };
+
+    issues.forEach(issue => {
+
+        const severityLabel =
+            severityLabels[issue.severity] || issue.severity || "Não definida";
+
+        const issueTypeLabel =
+            issueTypeLabels[issue.type] || issue.type || "Não definido";
+
+        const categoryLabel =
+            categoryLabels[issue.category] || issue.category || "Geral";
+
+        const severityScore = Number(issue.score ?? 1);
+
+        const penalty = Math.max(
+            0,
+            Math.min(10, severityScore - 1)
+        );
+
+        score -= penalty;
+
+        const element = document.createElement("div");
+
+        element.className = "issue";
+
+        element.innerHTML = `
+            <div class="issue-top">
+
+                <h3>
+                    ⚠️ ${escapeHtml(issue.message || "Problema encontrado")}
+                </h3>
+
+                <span class="severity">
+                    Prioridade: ${escapeHtml(severityLabel)}
+                </span>
+
+            </div>
+
+            <p>
+                <strong>Tipo:</strong>
+                ${escapeHtml(issueTypeLabel)}
+            </p>
+
+            <p>
+                <strong>Categoria:</strong>
+                ${escapeHtml(categoryLabel)}
+            </p>
+
+            <p>
+                <strong>Problema:</strong><br>
+                ${escapeHtml(issue.problem || "")}
+            </p>
+
+            ${
+                issue.line
+                    ? `<p>
+                        <strong>📍 Linha do HTML:</strong>
+                        ${escapeHtml(issue.line)}
+                    </p>`
+                    : ""
+            }
+
+            ${
+                Array.isArray(issue.lines) && issue.lines.length > 1
+                    ? `<p>
+                        <strong>📍 Linhas do HTML:</strong>
+                        ${escapeHtml(issue.lines.join(", "))}
+                    </p>`
+                    : ""
+            }
+
+            <p>
+                <strong>Como melhorar:</strong><br>
+                ${escapeHtml(issue.recommendation || "")}
+            </p>
+
+            <p>
+                <strong>Exemplo:</strong><br>
+                <code>${escapeHtml(issue.example || "")}</code>
+            </p>
+        `;
+
+        issuesContainer.appendChild(element);
+    });
+
+    score = Math.max(score, 0);
+
+    scoreElement.textContent = Math.round(score);
+}
+
+
+/* =========================
+   SEGURANÇA HTML
+========================= */
+
+function escapeHtml(value) {
+
+    const div = document.createElement("div");
+
+    div.textContent = String(value ?? "");
+
+    return div.innerHTML;
+}
+
+
+/* =========================
+   CHAT
+========================= */
+
+closeChat.addEventListener("click", () => {
+
+    chat.style.display = "none";
+    openChat.style.display = "block";
+});
+
+
+openChat.addEventListener("click", () => {
+
+    chat.style.display = "block";
+    openChat.style.display = "none";
+});
+
+
+chatButton.addEventListener("click", sendChatMessage);
+
+
+chatInput.addEventListener("keydown", (event) => {
+
+    if (event.key === "Enter") {
+        sendChatMessage();
+    }
+});
+
+
+async function sendChatMessage() {
+
+    const message = chatInput.value.trim();
+
+    if (!message) {
+        return;
+    }
+
+    addChatMessage("Você", message);
+
+    chatInput.value = "";
+    chatInput.disabled = true;
+    chatButton.disabled = true;
+
+    try {
+
+        const response = await fetch("/api/chat", {
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({
+                message: message,
+                context: currentAnalysis
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data.error || "Erro ao consultar a IA."
+            );
+        }
+
+        addChatMessage(
+            "DEVFIX",
+            data.response
+        );
+
+    } catch (error) {
+
+        console.error("Erro no chat:", error);
+
+        addChatMessage(
+            "DEVFIX",
+            "Não foi possível obter uma resposta da IA no momento."
+        );
+
+    } finally {
+
+        chatInput.disabled = false;
+        chatButton.disabled = false;
+        chatInput.focus();
+
+    }
+}
+
+
+function addChatMessage(author, text) {
+
+    const div = document.createElement("div");
+
+    div.className =
+        author === "Você"
+            ? "chat-message user"
+            : "chat-message assistant";
+
+    div.innerHTML = `
+        <strong>${escapeHtml(author)}</strong>
+        <p>${escapeHtml(text)}</p>
+    `;
+
+    chatMessages.appendChild(div);
+
+    chatMessages.scrollTop =
+        chatMessages.scrollHeight;
+}
+
+
+/* =========================
+   CHAT ARRASTÁVEL
+========================= */
+
+let isDragging = false;
+let offsetX = 0;
+let offsetY = 0;
+
+const chatHeader =
+    document.querySelector(".chat-header");
+
+
+chatHeader.addEventListener("pointerdown", (event) => {
+
+    if (event.target.closest("#closeChat")) {
+        return;
+    }
+
+    isDragging = true;
+
+    const rect =
+        chat.getBoundingClientRect();
+
+    offsetX =
+        event.clientX - rect.left;
+
+    offsetY =
+        event.clientY - rect.top;
+
+    chat.style.right = "auto";
+    chat.style.bottom = "auto";
+
+    chatHeader.setPointerCapture(
+        event.pointerId
+    );
+});
+
+
+chatHeader.addEventListener("pointermove", (event) => {
+
+    if (!isDragging) {
+        return;
+    }
+
+    const newLeft =
+        event.clientX - offsetX;
+
+    const newTop =
+        event.clientY - offsetY;
+
+    chat.style.left =
+        `${newLeft}px`;
+
+    chat.style.top =
+        `${newTop}px`;
+});
+
+
+chatHeader.addEventListener("pointerup", (event) => {
+
+    isDragging = false;
+
+    chatHeader.releasePointerCapture(
+        event.pointerId
+    );
+});
+
+
+chatHeader.addEventListener("pointercancel", () => {
+
+    isDragging = false;
+
+});
+
+
+/* =========================
+   TEMAS
+========================= */
+
+themeToggle.addEventListener("click", () => {
+
+    themeMenu.classList.toggle("hidden");
+
+});
+
+
+function applyTheme(theme) {
+
+    if (theme === "black") {
+
+        document.documentElement
+            .removeAttribute("data-theme");
+
+    } else {
+
+        document.documentElement
+            .setAttribute("data-theme", theme);
+
+    }
+
+    localStorage.setItem(
+        "devfix-theme",
+        theme
+    );
+}
+
+
+themeOptions.forEach((option) => {
+
+    option.addEventListener("click", () => {
+
+        const selectedTheme =
+            option.dataset.themeOption;
+
+        applyTheme(selectedTheme);
+
+        themeMenu.classList.add("hidden");
+
+    });
+
+});
+
+
+const savedTheme =
+    localStorage.getItem("devfix-theme");
+
+
+if (savedTheme) {
+
+    applyTheme(savedTheme);
+
+}

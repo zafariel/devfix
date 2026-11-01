@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="black">
+<footer>© 2026 devfix</footer>
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="/static/favicon.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DEVFIX — Diagnóstico real</title>
+    <meta name="description" content="DEVFIX — Diagnóstico e análise de problemas em sites.">
+    <meta name="robots" content="index, follow">
+<style>
+:root {
+    --bg: #03070c;
+    --bg-2: #07111c;
+    --surface: rgba(7, 17, 29, .72);
+    --surface-strong: rgba(9, 22, 36, .92);
+    --surface-soft: rgba(10, 25, 40, .48);
+    --text: #f3f8ff;
+    --muted: #8da4b9;
+    --soft: #5f768c;
+    --border: rgba(111, 177, 231, .20);
+    --border-strong: rgba(93, 186, 255, .46);
+    --accent: #35aaff;
+    --accent-2: #6cdbff;
+    --good: #24d9a1;
+    --warn: #ffb34e;
+    --bad: #ff5269;
+    --shadow: rgba(0,0,0,.48);
+    --custom-background: none;
+}
+[data-theme="white"] { --bg:#eef3f8; --bg-2:#dce7f0; --surface:rgba(255,255,255,.78); --surface-strong:rgba(255,255,255,.95); --surface-soft:rgba(255,255,255,.60); --text:#101a24; --muted:#506274; --soft:#718394; --border:rgba(30,70,105,.16); --border-strong:rgba(30,135,215,.42); --accent:#178ee8; --accent-2:#49b9ff; --shadow:rgba(0,20,40,.18); }
+[data-theme="red"] { --bg:#100507; --bg-2:#21090d; --surface:rgba(32,10,16,.74); --surface-strong:rgba(42,12,20,.95); --surface-soft:rgba(45,13,21,.58); --text:#fff4f5; --muted:#d3a0a7; --soft:#a8757d; --border:rgba(255,95,111,.20); --border-strong:rgba(255,78,99,.48); --accent:#ff4964; --accent-2:#ff8295; }
+[data-theme="blue"] { --bg:#030913; --bg-2:#07172a; --surface:rgba(7,24,45,.75); --surface-strong:rgba(8,29,52,.94); --surface-soft:rgba(8,31,54,.58); --text:#f1f8ff; --muted:#9bb8d4; --soft:#708ea9; --border:rgba(83,160,224,.21); --border-strong:rgba(66,161,255,.48); --accent:#3aa5ff; --accent-2:#7bc7ff; }
+[data-theme="green"] { --bg:#031009; --bg-2:#082016; --surface:rgba(7,30,18,.75); --surface-strong:rgba(9,38,22,.94); --surface-soft:rgba(8,42,24,.58); --text:#f2fff6; --muted:#9cc8ab; --soft:#6e9d7d; --border:rgba(64,218,126,.19); --border-strong:rgba(50,218,116,.46); --accent:#35d97c; --accent-2:#7af0ac; }
+[data-theme="purple"] { --bg:#0a0610; --bg-2:#170b22; --surface:rgba(24,12,37,.75); --surface-strong:rgba(31,14,48,.94); --surface-soft:rgba(35,15,54,.58); --text:#faf5ff; --muted:#bea9ce; --soft:#937ba6; --border:rgba(190,101,255,.20); --border-strong:rgba(182,89,255,.48); --accent:#b55cff; --accent-2:#d092ff; }
+[data-theme="orange"] { --bg:#120803; --bg-2:#241207; --surface:rgba(38,18,7,.75); --surface-strong:rgba(48,21,7,.94); --surface-soft:rgba(54,23,8,.58); --text:#fff7ef; --muted:#d4b08f; --soft:#a9815e; --border:rgba(255,143,54,.20); --border-strong:rgba(255,135,45,.48); --accent:#ff8c32; --accent-2:#ffc27c; }
+[data-theme="pink"] { --bg:#11050c; --bg-2:#220a18; --surface:rgba(34,10,23,.75); --surface-strong:rgba(44,11,28,.94); --surface-soft:rgba(49,12,31,.58); --text:#fff3f8; --muted:#d4a4ba; --soft:#a97a90; --border:rgba(255,84,157,.20); --border-strong:rgba(255,74,149,.48); --accent:#ff4d9c; --accent-2:#ff91c4; }
+[data-theme="cyan"] { --bg:#021012; --bg-2:#06252a; --surface:rgba(5,30,34,.75); --surface-strong:rgba(6,38,43,.94); --surface-soft:rgba(6,44,49,.58); --text:#effeff; --muted:#9dcbd0; --soft:#70a3aa; --border:rgba(60,224,241,.20); --border-strong:rgba(53,225,243,.48); --accent:#35e5ff; --accent-2:#8af4ff; }
+[data-theme="gold"] { --bg:#0e0b03; --bg-2:#201904; --surface:rgba(32,24,7,.75); --surface-strong:rgba(41,31,8,.94); --surface-soft:rgba(46,34,9,.58); --text:#fffbed; --muted:#d1c08c; --soft:#a69761; --border:rgba(255,212,71,.19); --border-strong:rgba(255,212,71,.48); --accent:#ffd447; --accent-2:#ffe891; }
+
+* { box-sizing:border-box; margin:0; padding:0; }
+html { scroll-behavior:smooth; background:var(--bg); }
+body { min-height:100vh; font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color:var(--text); background:radial-gradient(circle at 75% 10%, rgba(39,154,255,.12), transparent 32%), radial-gradient(circle at 20% 55%, rgba(30,116,200,.08), transparent 28%), linear-gradient(180deg,var(--bg-2),var(--bg)); line-height:1.5; overflow-x:hidden; }
+body.custom-theme { background-image:linear-gradient(rgba(3,7,12,.72),rgba(3,7,12,.88)), var(--custom-background); background-size:cover; background-position:center; background-attachment:fixed; }
+button,input { font:inherit; }
+button { -webkit-tap-highlight-color:transparent; }
+a { color:inherit; }
+.hidden { display:none !important; }
+
+.ambient { position:fixed; pointer-events:none; border-radius:50%; filter:blur(70px); opacity:.18; z-index:-2; }
+.ambient-a { width:420px; height:420px; right:-120px; top:140px; background:var(--accent); }
+.ambient-b { width:360px; height:360px; left:-170px; bottom:80px; background:#1265bd; }
+.grid-overlay { position:fixed; inset:0; z-index:-3; opacity:.16; pointer-events:none; background-image:linear-gradient(rgba(92,172,230,.10) 1px,transparent 1px),linear-gradient(90deg,rgba(92,172,230,.10) 1px,transparent 1px); background-size:70px 70px; mask-image:linear-gradient(to bottom,black,transparent 80%); }
+
+.topbar { position:sticky; top:0; z-index:900; border-bottom:1px solid rgba(124,189,235,.12); background:rgba(3,8,14,.72); backdrop-filter:blur(18px); }
+.topbar-inner { max-width:1240px; min-height:70px; margin:auto; padding:0 26px; display:flex; align-items:center; justify-content:space-between; gap:24px; }
+.brand { text-decoration:none; font-size:18px; letter-spacing:-.8px; font-weight:800; }
+.brand span { color:#f1f6fb; }.brand strong { color:var(--accent-2); }
+.topbar-center { flex:1; display:flex; justify-content:center; }.product-state { color:#7592aa; font-size:9px; letter-spacing:2px; }.product-state i { display:inline-block; width:6px; height:6px; margin-right:7px; border-radius:50%; background:var(--good); box-shadow:0 0 10px var(--good); }
+.topbar-actions { display:flex; align-items:center; }.theme-picker { display:flex; gap:7px; }.theme-control { position:relative; }
+.theme-toggle { min-height:38px; padding:0 12px; border:1px solid var(--border); border-radius:9px; background:rgba(7,17,29,.55); color:var(--muted); cursor:pointer; font-size:11px; transition:.2s; }.theme-toggle span { color:var(--accent-2); margin-left:5px; }.theme-toggle:hover { color:var(--text); border-color:var(--border-strong); background:rgba(18,42,65,.72); }
+.theme-menu { position:absolute; top:calc(100% + 10px); right:0; width:190px; max-height:65vh; overflow:auto; padding:8px; border:1px solid var(--border); border-radius:12px; background:rgba(6,16,27,.97); box-shadow:0 22px 60px rgba(0,0,0,.45); z-index:2000; }.theme-option { width:100%; padding:9px 10px; border:0; border-radius:8px; background:transparent; color:var(--text); text-align:left; cursor:pointer; font-size:12px; }.theme-option:hover { background:rgba(70,150,220,.13); }.custom-theme-menu { width:220px; }.custom-theme-option { width:100%; min-height:62px; margin-bottom:7px; display:flex; align-items:flex-end; padding:10px; border:1px solid var(--border); border-radius:9px; color:white; background-size:cover; background-position:center; cursor:pointer; text-shadow:0 1px 5px #000; }.custom-theme-option:last-child{margin-bottom:0}.custom-theme-option:hover{transform:translateY(-1px);border-color:var(--border-strong)}
+.custom-theme-option[data-custom-theme="black"]{background-image:url("/static/themes/custom/2196afa9babcb4faf730e241a5dd3cad.jpg")}.custom-theme-option[data-custom-theme="white"]{background-image:url("/static/themes/custom/e762fd01e73aac3a3ffad734fbec0979.jpg")}.custom-theme-option[data-custom-theme="red"]{background-image:url("/static/themes/custom/a603143cd5568406be843e976924697f.jpg")}.custom-theme-option[data-custom-theme="blue"]{background-image:url("/static/themes/custom/6c8158d7512985ff5726186bd848c036.jpg")}.custom-theme-option[data-custom-theme="green"]{background-image:url("/static/themes/custom/b24f896d5c33a611df0497d93d192862.jpg")}.custom-theme-option[data-custom-theme="purple"]{background-image:url("/static/themes/custom/2d83c9c59df963b2d7162abd0981c0e0.jpg")}.custom-theme-option[data-custom-theme="orange"]{background-image:url("/static/themes/custom/8282658b5da529a017af50d45c3d303d.jpg")}.custom-theme-option[data-custom-theme="pink"]{background-image:url("/static/themes/custom/77889a56dc8bc57b9d7903847cd29634.jpg")}.custom-theme-option[data-custom-theme="cyan"]{background-image:url("/static/themes/custom/6273d9cfd1b83372e3a9902eb3b63420.jpg")}.custom-theme-option[data-custom-theme="gold"]{background-image:url("/static/themes/custom/a72425545b2532c22cc447b64c121d9a.jpg")}
+
+.app-shell { max-width:1240px; margin:auto; padding:0 26px 80px; }
+.analyzer-stage { min-height:720px; position:relative; padding:88px 0 70px; display:grid; grid-template-columns:minmax(0,1.02fr) minmax(380px,.98fr); align-items:center; gap:50px; }
+.stage-copy { position:relative; z-index:2; }.eyebrow,.card-label { color:#55c7ff; font-size:9px; font-weight:700; letter-spacing:2.1px; }.stage-copy h1 { margin-top:18px; max-width:700px; font-size:clamp(44px,5.5vw,76px); line-height:.98; letter-spacing:-4px; }.stage-copy h1 em { color:var(--accent); font-style:normal; text-shadow:0 0 30px rgba(52,169,255,.22); }.stage-copy p { max-width:620px; margin-top:24px; color:var(--muted); font-size:16px; line-height:1.75; }
+.url-console { position:relative; z-index:4; max-width:720px; margin-top:38px; padding:9px; border:1px solid var(--border-strong); border-radius:16px; background:linear-gradient(180deg,rgba(12,31,50,.88),rgba(5,15,25,.84)); box-shadow:0 0 0 1px rgba(70,160,230,.05),0 20px 70px rgba(0,0,0,.35),0 0 45px rgba(35,160,255,.10); }.url-console:before { content:""; position:absolute; inset:-1px; border-radius:inherit; pointer-events:none; background:linear-gradient(110deg,transparent 15%,rgba(80,198,255,.28),transparent 46%); opacity:.35; }.console-topline,.console-foot { display:flex; justify-content:space-between; gap:12px; padding:5px 12px 9px; color:#6f8ba3; font-size:8px; letter-spacing:1.2px; }.console-topline i { display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--good); box-shadow:0 0 8px var(--good); }.url-row { display:flex; align-items:center; gap:10px; padding:6px; border:1px solid rgba(100,176,226,.18); border-radius:11px; background:rgba(1,8,14,.55); }.url-icon { width:35px; text-align:center; color:var(--accent-2); }.url-row input { flex:1; min-width:0; border:0; outline:0; background:transparent; color:var(--text); font-size:13px; }.url-row input::placeholder{color:#557087}.url-row button { min-height:48px; padding:0 20px; border:0; border-radius:9px; background:linear-gradient(135deg,#2c9ff7,#58c8ff); color:#03101a; font-weight:800; cursor:pointer; box-shadow:0 0 28px rgba(50,171,255,.24); }.url-row button span{margin-left:10px}.url-row button:disabled{opacity:.55;cursor:wait}.console-foot{padding:8px 12px 2px}.status{min-height:22px;margin-top:12px;color:var(--muted);font-size:12px}.status.loading{color:var(--accent-2)}
+.stage-visual { position:relative; min-height:520px; display:flex; align-items:center; justify-content:center; }.orb{position:absolute;border:1px solid rgba(73,178,255,.22);border-radius:50%;box-shadow:0 0 50px rgba(33,150,255,.09) inset}.orb-1{width:520px;height:520px;right:-70px}.orb-2{width:330px;height:330px;right:50px;border-color:rgba(85,217,255,.15)}.tech-line{position:absolute;height:1px;background:linear-gradient(90deg,transparent,rgba(70,180,255,.45),transparent);transform-origin:right center}.line-1{width:570px;right:-110px;top:125px;transform:rotate(-25deg)}.line-2{width:500px;right:-70px;bottom:130px;transform:rotate(19deg)}.preview-window{position:relative;width:min(470px,100%);padding:14px;border:1px solid rgba(88,181,239,.36);border-radius:14px;background:linear-gradient(180deg,rgba(8,25,41,.94),rgba(4,13,23,.94));box-shadow:0 30px 90px rgba(0,0,0,.52),0 0 60px rgba(38,164,255,.14);z-index:3;transform:perspective(1000px) rotateY(-7deg) rotateX(2deg)}.window-head{display:flex;justify-content:space-between;color:#e8f4ff;font-size:11px;padding:3px 5px 10px}.window-head span{color:#6e879b}.mini-url{height:31px;padding:8px 10px;border:1px solid rgba(87,174,226,.16);border-radius:7px;color:#90abc0;background:rgba(0,8,15,.52);font-size:9px}.preview-main{display:grid;grid-template-columns:1fr 1.35fr;gap:16px;padding:22px 12px 16px}.mini-score{width:125px;height:125px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;align-content:center;border:6px solid rgba(40,192,255,.22);box-shadow:0 0 28px rgba(41,189,255,.12),inset 0 0 22px rgba(42,170,255,.08);position:relative}.mini-score:before{content:"";position:absolute;inset:-6px;border-radius:50%;border:3px solid transparent;border-top-color:#31e5b3;border-right-color:#3caeff;transform:rotate(-20deg)}.mini-score strong{font-size:31px;line-height:1}.mini-score span{font-size:9px;color:#718aa0;align-self:center}.mini-score small{width:100%;text-align:center;color:#7891a5;font-size:7px;margin-top:4px}.mini-statuses{display:flex;flex-direction:column;gap:9px;padding-top:7px}.mini-statuses span{display:grid;grid-template-columns:8px 1fr auto;align-items:center;gap:7px;color:#b8cbd9;font-size:9px}.mini-statuses i,.mini-issues i{width:6px;height:6px;border-radius:50%}.good{background:var(--good);box-shadow:0 0 8px rgba(36,217,161,.45)}.warn{background:var(--warn);box-shadow:0 0 8px rgba(255,179,78,.45)}.bad{background:var(--bad);box-shadow:0 0 8px rgba(255,82,105,.45)}.mini-statuses b{font-size:7px;padding:3px 7px;border-radius:10px;background:rgba(35,214,161,.11);color:#4be7b9}.mini-statuses span:nth-child(2) b{background:rgba(255,179,78,.11);color:#ffc56e}.mini-statuses span:nth-child(3) b{background:rgba(255,82,105,.11);color:#ff7587}.mini-issues{padding:11px 10px;border-top:1px solid rgba(93,173,226,.14);display:flex;flex-direction:column;gap:8px}.mini-issues strong{font-size:9px;color:#e4eff8;margin-bottom:1px}.mini-issues span{display:grid;grid-template-columns:7px 1fr auto;align-items:center;gap:7px;color:#8099ad;font-size:8px}.mini-issues b{font-size:6px;color:#ff7587;background:rgba(255,82,105,.10);padding:3px 6px;border-radius:8px}.mini-issues span:last-child b{color:#ffc46a;background:rgba(255,179,78,.1)}.floating-panel{position:absolute;right:-10px;top:75px;width:150px;padding:13px;border:1px solid rgba(76,169,230,.32);border-radius:10px;background:rgba(5,17,29,.78);backdrop-filter:blur(10px);box-shadow:0 20px 45px rgba(0,0,0,.34);z-index:4}.floating-panel small{display:block;color:#7d9bb1;font-size:7px;margin-bottom:9px}.floating-panel span{display:block;color:#8ca7ba;font-size:7px;margin-top:6px}.floating-panel span:before{content:"";display:inline-block;width:4px;height:4px;margin-right:6px;border-radius:50%;background:var(--accent)}
+
+.results { padding:50px 0 100px; }.results-topline{display:flex;align-items:flex-end;justify-content:space-between;gap:25px;margin-bottom:24px}.results-topline h2{margin-top:10px;font-size:34px;letter-spacing:-1.5px}.results-topline p{margin-top:5px;color:var(--muted);font-size:12px;word-break:break-all}.secondary-button{min-height:42px;padding:0 15px;border:1px solid var(--border);border-radius:9px;background:rgba(8,20,33,.65);color:var(--text);cursor:pointer;font-size:11px}.secondary-button:hover{border-color:var(--border-strong);background:rgba(18,44,67,.78)}
+.glass-card{border:1px solid var(--border);background:linear-gradient(145deg,rgba(12,30,47,.72),rgba(5,15,25,.70));box-shadow:0 18px 55px rgba(0,0,0,.20),inset 0 1px 0 rgba(255,255,255,.025);backdrop-filter:blur(12px)}.dashboard-grid{display:grid;grid-template-columns:280px 1fr;gap:16px}.score-card{min-height:350px;padding:25px;border-radius:16px;position:relative;overflow:hidden}.score-card:after{content:"";position:absolute;width:180px;height:180px;border-radius:50%;right:-90px;bottom:-90px;background:rgba(48,173,255,.12);filter:blur(18px)}.card-label{display:block;color:#66caff;font-size:8px;letter-spacing:1.8px}.score-ring{--score:72;position:relative;width:205px;height:205px;margin:30px auto 18px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--good) calc(var(--score)*.45%),var(--accent) calc(var(--score)*1%),rgba(62,100,130,.18) 0)}.score-ring:before{content:"";position:absolute;inset:8px;border-radius:50%;background:#06131f;box-shadow:inset 0 0 35px rgba(0,0,0,.4)}.score-core{position:relative;text-align:center}.score-core strong{font-size:50px;letter-spacing:-3px}.score-core span{color:#68839a;font-size:12px}.score-core small{display:block;margin-top:3px;color:#7d96aa;font-size:9px;letter-spacing:1px;text-transform:uppercase}.score-caption{text-align:center;color:var(--muted);font-size:11px;line-height:1.6;max-width:220px;margin:auto}.health-card{padding:25px;border-radius:16px}.card-heading{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:19px}.card-heading h3,.panel-header h3{margin-top:8px;font-size:20px;letter-spacing:-.7px}.live-dot{font-size:7px;letter-spacing:1px;color:#54e5b8}.category-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}.category-item{min-height:150px;padding:14px;border:1px solid rgba(96,170,221,.13);border-radius:11px;background:rgba(6,19,31,.48);position:relative}.category-icon{width:31px;height:31px;display:grid;place-items:center;border-radius:8px;border:1px solid rgba(85,175,235,.19);color:var(--accent-2);font-size:10px;margin-bottom:22px}.category-copy span{display:block;color:#9bb0c0;font-size:9px}.category-copy strong{display:block;margin-top:7px;font-size:9px}.category-copy strong.good{color:var(--good);background:none;box-shadow:none}.category-copy strong.warn{color:var(--warn);background:none;box-shadow:none}.category-copy strong.bad{color:var(--bad);background:none;box-shadow:none}.category-dot{position:absolute;right:14px;bottom:14px;width:5px;height:5px;border-radius:50%}.category-dot.good{background:var(--good);box-shadow:0 0 10px var(--good)}.category-dot.warn{background:var(--warn);box-shadow:0 0 10px var(--warn)}.category-dot.bad{background:var(--bad);box-shadow:0 0 10px var(--bad)}
+.diagnostic-panel{margin-top:16px;border-radius:16px;padding:25px}.panel-header{display:flex;justify-content:space-between;gap:20px;align-items:flex-start}.issue-count{font-size:9px;color:#7891a5;border:1px solid var(--border);padding:7px 10px;border-radius:999px}.filter-row{display:flex;gap:7px;margin:20px 0 14px}.filter{border:1px solid var(--border);background:rgba(6,18,30,.42);color:#7690a5;padding:7px 11px;border-radius:999px;font-size:9px;cursor:pointer}.filter:hover,.filter.active{border-color:var(--border-strong);color:var(--accent-2);background:rgba(30,112,169,.12)}.issues-list{display:flex;flex-direction:column;gap:10px}.issue-card{display:grid;grid-template-columns:12px 1fr;border:1px solid rgba(91,164,217,.14);border-radius:12px;background:rgba(4,14,24,.55);overflow:hidden}.issue-card:hover{border-color:rgba(86,183,245,.34);background:rgba(6,20,34,.72)}.issue-marker{padding-top:22px;display:flex;justify-content:center}.issue-marker i{width:6px;height:6px;border-radius:50%;background:var(--accent)}.issue-card.high .issue-marker i{background:var(--bad);box-shadow:0 0 10px var(--bad)}.issue-card.medium .issue-marker i{background:var(--warn);box-shadow:0 0 10px var(--warn)}.issue-card.low .issue-marker i{background:var(--accent);box-shadow:0 0 10px var(--accent)}.issue-content{padding:18px 20px 20px}.issue-title-row{display:flex;justify-content:space-between;gap:15px;align-items:flex-start}.issue-title-row>div{display:flex;gap:11px;align-items:flex-start}.issue-index{color:#4d6d85;font-size:9px;padding-top:4px}.issue-title-row h4{font-size:14px;letter-spacing:-.2px}.severity-pill{padding:5px 8px;border-radius:999px;font-size:7px;text-transform:uppercase;letter-spacing:1px;border:1px solid rgba(255,255,255,.08)}.severity-pill.high{color:#ff7184;background:rgba(255,82,105,.08);border-color:rgba(255,82,105,.17)}.severity-pill.medium{color:#ffc56e;background:rgba(255,179,78,.08);border-color:rgba(255,179,78,.17)}.severity-pill.low{color:#6bcaff;background:rgba(53,170,255,.08);border-color:rgba(53,170,255,.17)}.issue-problem{margin:9px 0 11px;color:#7f97a9;font-size:11px;line-height:1.6}.issue-meta{display:flex;flex-wrap:wrap;gap:6px}.issue-meta>span:not(.detail-chip){color:#698196;font-size:8px;padding:4px 7px;border-radius:5px;background:rgba(88,153,198,.07)}.detail-chip{color:#78cfff;font-size:8px;padding:4px 7px;border-radius:5px;background:rgba(50,170,255,.08);border:1px solid rgba(70,180,255,.11)}.issue-resolution{display:grid;grid-template-columns:1.1fr .9fr;gap:18px;margin-top:17px;padding-top:15px;border-top:1px solid rgba(88,159,209,.11)}.issue-resolution>div>span,.code-block>span{font-size:7px;letter-spacing:1.4px;color:#5f8aa7}.issue-resolution p{margin-top:6px;color:#a4b7c6;font-size:10px;line-height:1.6}.code-block{padding:11px;border:1px solid rgba(77,161,220,.12);border-radius:8px;background:#020a12}.code-block code{display:block;margin-top:7px;color:#75cfff;font-family:"SFMono-Regular",Consolas,monospace;font-size:9px;line-height:1.6;white-space:pre-wrap;word-break:break-word}.ai-note{display:flex;gap:9px;margin-top:12px;padding:10px;border:1px solid rgba(86,206,255,.12);border-radius:8px;background:rgba(39,157,220,.05)}.ai-note span{color:#62d8ff;font-size:7px;letter-spacing:1px}.ai-note p{color:#8da9bc;font-size:9px}.empty-state{text-align:center;padding:50px 20px;border:1px dashed rgba(84,164,218,.18);border-radius:12px}.empty-icon{width:38px;height:38px;margin:0 auto 13px;display:grid;place-items:center;border-radius:50%;border:1px solid rgba(36,217,161,.35);color:var(--good);box-shadow:0 0 24px rgba(36,217,161,.12)}.empty-state h3{font-size:14px}.empty-state p{margin-top:6px;color:#71899d;font-size:10px}
+.details-grid{display:grid;grid-template-columns:1fr 320px;gap:16px;margin-top:16px}.info-panel,.site-meta{border-radius:16px;padding:22px}.tabs{display:flex;gap:5px;border-bottom:1px solid rgba(90,160,210,.12);padding-bottom:10px}.analysis-tab{border:0;background:transparent;color:#668197;padding:7px 9px;border-radius:6px;cursor:pointer;font-size:9px}.analysis-tab.active{color:var(--accent-2);background:rgba(50,164,234,.08)}.tab-content{min-height:170px;padding-top:20px}.tab-summary{display:grid;grid-template-columns:140px 1fr 1fr;gap:22px;align-items:start}.summary-big strong{display:block;font-size:40px;letter-spacing:-2px}.summary-big span{color:#6d879b;font-size:9px}.tab-content h4{font-size:12px}.tab-content p{margin-top:7px;color:#7f98aa;font-size:10px;line-height:1.7}.detail-list{display:grid;grid-template-columns:1fr 1fr;gap:10px}.detail-list>div{padding:12px;border:1px solid rgba(91,164,217,.11);border-radius:9px;background:rgba(4,14,24,.35)}.detail-list span{display:block;color:#638096;font-size:8px;text-transform:uppercase;letter-spacing:.8px}.detail-list strong{display:block;margin-top:7px;color:#b9cad7;font-size:10px;word-break:break-word}.recommendation-list{display:grid;gap:9px}.recommendation-list>div{display:flex;gap:11px;padding:9px 0;border-bottom:1px solid rgba(91,164,217,.09)}.recommendation-list b{color:#4e88aa;font-size:8px}.recommendation-list p{margin:0}.empty-tab{padding:25px 0}.site-meta .card-label{margin-bottom:14px}.meta-row{display:flex;justify-content:space-between;gap:15px;padding:12px 0;border-bottom:1px solid rgba(91,164,217,.10)}.meta-row span{color:#688399;font-size:9px}.meta-row strong{max-width:60%;color:#b7c9d6;font-size:9px;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.chat{position:fixed;right:26px;bottom:26px;width:390px;height:560px;z-index:1000;display:flex;flex-direction:column;border:1px solid var(--border-strong);border-radius:15px;background:rgba(5,15,25,.95);box-shadow:0 30px 100px rgba(0,0,0,.55),0 0 45px rgba(41,164,255,.10);backdrop-filter:blur(20px);overflow:hidden}.chat:before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(135deg,rgba(50,175,255,.08),transparent 40%)}.chat-header{position:relative;display:flex;justify-content:space-between;gap:20px;padding:20px;border-bottom:1px solid rgba(91,164,217,.12);cursor:grab;touch-action:none;user-select:none}.chat-header:active{cursor:grabbing}.chat-header h2{margin-top:7px;font-size:16px;letter-spacing:-.4px}.chat-close{width:31px;height:31px;border:1px solid var(--border);border-radius:8px;background:transparent;color:#7d95a8;font-size:20px;cursor:pointer}.chat-close:hover{color:var(--accent-2);border-color:var(--border-strong)}.chat-messages{position:relative;display:flex;flex-direction:column;gap:10px;flex:1;min-height:0;overflow-y:auto;padding:18px}.chat-message{max-width:90%;padding:11px;border:1px solid rgba(90,163,214,.12);border-radius:9px;background:rgba(7,22,36,.58)}.chat-message.user{align-self:flex-end;background:rgba(35,130,190,.10)}.chat-message strong{font-size:8px;color:var(--accent-2);letter-spacing:1px}.chat-message p{margin-top:5px;color:#8da6b8;font-size:10px;line-height:1.6}.chat-input{position:relative;display:flex;gap:7px;padding:12px;border-top:1px solid rgba(91,164,217,.12)}.chat-input input{flex:1;min-width:0;height:42px;padding:0 12px;border:1px solid var(--border);border-radius:8px;outline:0;background:#020a12;color:var(--text);font-size:10px}.chat-input input:focus{border-color:var(--border-strong)}.chat-input button{width:42px;border:0;border-radius:8px;background:var(--accent);color:#02101a;font-weight:800;cursor:pointer}.chat-open{position:fixed;right:24px;bottom:24px;width:50px;height:50px;display:none;align-items:center;justify-content:center;border:1px solid var(--border-strong);border-radius:50%;background:rgba(7,21,34,.92);color:var(--accent-2);box-shadow:0 12px 40px rgba(0,0,0,.4),0 0 25px rgba(40,164,255,.16);z-index:999;cursor:pointer}
+
+@media (max-width:1000px){.analyzer-stage{grid-template-columns:1fr;padding-top:70px}.stage-visual{min-height:420px;order:-1}.stage-copy{text-align:center}.stage-copy p{margin-left:auto;margin-right:auto}.url-console{margin-left:auto;margin-right:auto}.dashboard-grid{grid-template-columns:1fr}.category-grid{grid-template-columns:repeat(5,1fr)}.details-grid{grid-template-columns:1fr}.tab-summary{grid-template-columns:1fr 1fr}}
+@media (max-width:700px){.topbar-inner{min-height:62px;padding:0 14px}.topbar-center{display:none}.theme-picker{gap:5px}.custom-theme-toggle{display:none}.theme-toggle{font-size:10px;padding:0 9px}.app-shell{padding:0 14px 50px}.analyzer-stage{min-height:0;padding:58px 0 48px;display:flex;flex-direction:column;gap:25px}.stage-copy h1{font-size:44px;letter-spacing:-2.5px}.stage-copy p{font-size:13px;line-height:1.65}.url-console{margin-top:26px}.url-row{flex-direction:column;align-items:stretch}.url-icon{display:none}.url-row input{height:43px;padding:0 10px}.url-row button{width:100%}.console-topline,.console-foot{font-size:7px}.stage-visual{order:0;width:100%;min-height:350px;overflow:hidden}.preview-window{width:92%;transform:none}.floating-panel{right:-18px;top:50px}.orb-1{width:400px;height:400px}.orb-2{width:250px;height:250px}.results{padding-top:20px}.results-topline{align-items:flex-start;flex-direction:column}.results-topline h2{font-size:28px}.secondary-button{width:100%}.category-grid{grid-template-columns:repeat(2,1fr)}.category-item{min-height:120px}.category-item:last-child{grid-column:span 2}.diagnostic-panel,.health-card,.score-card,.info-panel,.site-meta{padding:17px}.panel-header{flex-direction:column}.filter-row{overflow:auto;padding-bottom:2px}.issue-title-row{flex-direction:column}.issue-resolution{grid-template-columns:1fr}.detail-list,.tab-summary{grid-template-columns:1fr}.chat{left:12px;right:12px;bottom:12px;width:auto;height:calc(100vh - 24px);max-height:680px}.chat-open{right:16px;bottom:16px}.score-card{min-height:310px}.score-ring{width:180px;height:180px}.score-core strong{font-size:44px}}
+
+/* Theme system v2: all major analysis surfaces follow the active palette. */
+:root {
+    --panel-alpha: .78;
+    --panel-bg: rgba(6,16,27,.78);
+    --panel-bg-strong: rgba(6,16,27,.94);
+    --line: var(--border);
+    --heading: var(--text);
+    --body-text: var(--muted);
+    --chip-bg: color-mix(in srgb, var(--accent) 9%, transparent);
+    --code-bg: color-mix(in srgb, var(--bg) 82%, #000 18%);
+}
+
+[data-theme="white"] {
+    --panel-bg: rgba(255,255,255,.86);
+    --panel-bg-strong: rgba(255,255,255,.96);
+    --heading: #101a24;
+    --body-text: #506274;
+    --line: rgba(30,70,105,.16);
+    --chip-bg: rgba(23,142,232,.09);
+    --code-bg: #edf3f8;
+}
+
+/* Make the whole application inherit the active theme instead of retaining blue-only surfaces. */
+body,
+.app-shell,
+.analyzer-stage,
+.results,
+.diagnostic-panel,
+.health-card,
+.score-card,
+.info-panel,
+.site-meta,
+.preview-window,
+.floating-panel,
+.chat,
+.url-console,
+.issue-card,
+.detail-list > div,
+.theme-menu {
+    color: var(--heading);
+}
+
+.diagnostic-panel,
+.health-card,
+.score-card,
+.info-panel,
+.site-meta,
+.issue-card,
+.preview-window,
+.floating-panel,
+.url-console,
+.chat,
+.detail-list > div {
+    background: var(--panel-bg);
+    border-color: var(--line);
+}
+
+.issue-card:hover,
+.detail-list > div:hover {
+    border-color: var(--border-strong);
+    background: var(--panel-bg-strong);
+}
+
+.stage-copy h1,
+.results-topline h2,
+.panel-header h3,
+.issue-title-row h4,
+.tab-content h4,
+.empty-state h3,
+.score-core strong,
+.summary-big strong {
+    color: var(--heading);
+}
+
+.stage-copy p,
+.issue-problem,
+.issue-resolution p,
+.tab-content p,
+.empty-state p,
+.meta-row span,
+.detail-list span,
+.site-meta .card-label,
+.card-label,
+.console-foot,
+.health-card p {
+    color: var(--body-text);
+}
+
+.meta-row strong,
+.detail-list strong,
+.issue-meta > span:not(.detail-chip) {
+    color: var(--heading);
+}
+
+.code-block {
+    background: var(--code-bg);
+    border-color: var(--line);
+}
+
+.code-block code,
+.detail-chip,
+.analysis-tab.active,
+.score-card .score-caption,
+.issue-meta .detail-chip {
+    color: var(--accent);
+}
+
+.theme-toggle {
+    background: var(--panel-bg);
+    color: var(--heading);
+    border-color: var(--line);
+}
+
+.theme-toggle span { color: var(--accent); }
+
+.theme-menu {
+    background: var(--panel-bg-strong);
+    border-color: var(--line);
+    box-shadow: 0 22px 60px color-mix(in srgb, var(--shadow) 75%, transparent);
+}
+
+.theme-option {
+    color: var(--heading);
+}
+
+.theme-option:hover,
+.analysis-tab:hover {
+    background: var(--chip-bg);
+    color: var(--heading);
+}
+
+/* Textures are overlays, not replacements for the active color theme. */
+body.custom-theme {
+    background-image: linear-gradient(rgba(3,7,12,.58),rgba(3,7,12,.72)), var(--custom-background);
+}
+
+body.custom-theme[data-custom-theme="white"] {
+    background-image: linear-gradient(rgba(255,255,255,.38),rgba(255,255,255,.58)), var(--custom-background);
+}
+
+/* White mode: dark labels/buttons so every theme control remains readable. */
+[data-theme="white"] .theme-toggle,
+[data-theme="white"] .theme-option,
+[data-theme="white"] .custom-theme-toggle {
+    color: #101a24;
+}
+
+[data-theme="white"] .theme-toggle span,
+[data-theme="white"] .theme-option:hover,
+[data-theme="white"] .analysis-tab.active {
+    color: #0874c4;
+}
+
+[data-theme="white"] .custom-theme-option {
+    color: #101a24;
+    text-shadow: 0 1px 4px rgba(255,255,255,.9);
+}
+
+/* Theme-wide accents for controls, borders and focus states. */
+input:focus,
+button:focus-visible,
+.url-console:focus-within,
+.chat-input:focus-within {
+    border-color: var(--border-strong);
+    box-shadow: 0 0 0 3px var(--chip-bg), 0 0 28px color-mix(in srgb, var(--accent) 15%, transparent);
+}
+
+.primary-button,
+.analyze-button,
+.chat-send,
+.chat-open {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+    box-shadow: 0 10px 28px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.secondary-button,
+.analysis-tab.active {
+    border-color: var(--border-strong);
+}
+
+[data-theme="white"] .primary-button,
+[data-theme="white"] .analyze-button,
+[data-theme="white"] .chat-send,
+[data-theme="white"] .chat-open {
+    color: #fff;
+}
+
+</style>
+</head>
+<body>
+    <div class="ambient ambient-a"></div>
+    <div class="ambient ambient-b"></div>
+    <div class="grid-overlay"></div>
+
+    <header class="topbar">
+        <div class="topbar-inner">
+            <a class="brand" href="/" aria-label="DEVFIX">
+                <span>DEV</span><strong>FIX</strong>
+            </a>
+
+            <div class="topbar-center">
+                <span class="product-state"><i></i> WEBSITE DIAGNOSTICS</span>
+            </div>
+
+            <div class="topbar-actions">
+                <div class="theme-picker">
+                    <div class="theme-control">
+                        <button id="themeToggle" class="theme-toggle" type="button">Temas <span>⌄</span></button>
+                        <div id="themeMenu" class="theme-menu hidden">
+                            <button class="theme-option" data-theme-option="black" type="button">Modo preto</button>
+                            <button class="theme-option" data-theme-option="white" type="button">Modo branco</button>
+                            <button class="theme-option" data-theme-option="red" type="button">Modo vermelho</button>
+                            <button class="theme-option" data-theme-option="blue" type="button">Modo azul</button>
+                            <button class="theme-option" data-theme-option="green" type="button">Modo verde</button>
+                            <button class="theme-option" data-theme-option="purple" type="button">Modo roxo</button>
+                            <button class="theme-option" data-theme-option="orange" type="button">Modo laranja</button>
+                            <button class="theme-option" data-theme-option="pink" type="button">Modo rosa</button>
+                            <button class="theme-option" data-theme-option="cyan" type="button">Modo ciano</button>
+                            <button class="theme-option" data-theme-option="gold" type="button">Modo dourado</button>
+                        </div>
+                    </div>
+                    <div class="theme-control">
+                        <button id="customThemeToggle" class="theme-toggle custom-theme-toggle" type="button">Texturas <span>⌄</span></button>
+                        <div id="customThemeMenu" class="theme-menu custom-theme-menu hidden">
+                            <button class="custom-theme-option" data-custom-theme="black" type="button">Modo preto</button>
+                            <button class="custom-theme-option" data-custom-theme="white" type="button">Modo branco</button>
+                            <button class="custom-theme-option" data-custom-theme="red" type="button">Modo vermelho</button>
+                            <button class="custom-theme-option" data-custom-theme="blue" type="button">Modo azul</button>
+                            <button class="custom-theme-option" data-custom-theme="green" type="button">Modo verde</button>
+                            <button class="custom-theme-option" data-custom-theme="purple" type="button">Modo roxo</button>
+                            <button class="custom-theme-option" data-custom-theme="orange" type="button">Modo laranja</button>
+                            <button class="custom-theme-option" data-custom-theme="pink" type="button">Modo rosa</button>
+                            <button class="custom-theme-option" data-custom-theme="cyan" type="button">Modo ciano</button>
+                            <button class="custom-theme-option" data-custom-theme="gold" type="button">Modo dourado</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="app-shell">
+        <section class="analyzer-stage" id="analyzerStage">
+            <div class="stage-copy">
+                <span class="eyebrow">DEVFIX · AI WEBSITE DIAGNOSTICS</span>
+                <h1>Encontre os problemas.<br><em>Entenda como corrigir.</em></h1>
+                <p>Insira uma URL. O DEVFIX analisa o site e transforma problemas técnicos em informações claras para você agir.</p>
+            </div>
+
+            <div class="url-console">
+                <div class="console-topline">
+                    <span><i class="pulse"></i> ANÁLISE ONLINE</span>
+                    <span>HTTP · HTML · SEO · A11Y</span>
+                </div>
+                <div class="url-row">
+                    <span class="url-icon">↗</span>
+                    <input type="url" id="urlInput" name="url" placeholder="https://seusite.com" autocomplete="url" aria-label="URL do site para análise">
+                    <button id="analyzeButton" type="button">Analisar site <span>→</span></button>
+                </div>
+                <div class="console-foot">
+                    <span>Diagnóstico real</span>
+                    <span>Sem alterar seu site</span>
+                    <span>Resultado detalhado</span>
+                </div>
+            </div>
+            <p id="status" class="status"></p>
+
+            <div class="stage-visual" aria-hidden="true">
+                <div class="orb orb-1"></div>
+                <div class="orb orb-2"></div>
+                <div class="tech-line line-1"></div>
+                <div class="tech-line line-2"></div>
+                <div class="preview-window">
+                    <div class="window-head"><b>DEVFIX</b><span>×</span></div>
+                    <div class="mini-url">⌁ &nbsp; exemplo.com</div>
+                    <div class="preview-main">
+                        <div class="mini-score"><strong>72</strong><span>/100</span><small>Pontuação geral</small></div>
+                        <div class="mini-statuses">
+                            <span><i class="good"></i>SEO <b>Bom</b></span>
+                            <span><i class="warn"></i>Acessibilidade <b>Atenção</b></span>
+                            <span><i class="bad"></i>Estrutura <b>Crítico</b></span>
+                            <span><i class="good"></i>Performance <b>Bom</b></span>
+                            <span><i class="good"></i>Segurança <b>Bom</b></span>
+                        </div>
+                    </div>
+                    <div class="mini-issues">
+                        <strong>Problemas encontrados</strong>
+                        <span><i class="bad"></i> Meta description ausente <b>ALTO</b></span>
+                        <span><i class="bad"></i> Elemento &lt;main&gt; não encontrado <b>ALTO</b></span>
+                        <span><i class="warn"></i> Charset não especificado <b>MÉDIO</b></span>
+                    </div>
+                </div>
+                <div class="floating-panel">
+                    <small>Análise em andamento...</small>
+                    <span>SEO</span><span>Acessibilidade</span><span>HTML</span><span>Performance</span><span>Segurança</span>
+                </div>
+            </div>
+        </section>
+
+        <section id="results" class="results hidden">
+            <div class="results-topline">
+                <div>
+                    <span class="eyebrow">DIAGNÓSTICO CONCLUÍDO</span>
+                    <h2 id="resultsTitle">Análise do site</h2>
+                    <p id="resultsUrl">—</p>
+                </div>
+                <button id="newAnalysis" class="secondary-button" type="button">Nova análise <span>↗</span></button>
+            </div>
+
+            <div class="dashboard-grid">
+                <article class="score-card glass-card">
+                    <div class="card-label">PONTUAÇÃO GERAL</div>
+                    <div class="score-ring" id="scoreRing" style="--score:72">
+                        <div class="score-core"><strong id="score">72</strong><span>/100</span><small>saúde geral</small></div>
+                    </div>
+                    <div class="score-caption" id="scoreCaption">Boa base, mas existem pontos que merecem atenção.</div>
+                </article>
+
+                <article class="health-card glass-card">
+                    <div class="card-heading">
+                        <div><span class="card-label">VISÃO POR CATEGORIA</span><h3>Onde estão os problemas?</h3></div>
+                        <span class="live-dot">● AO VIVO</span>
+                    </div>
+                    <div id="categoryGrid" class="category-grid"></div>
+                </article>
+            </div>
+
+            <div class="diagnostic-panel glass-card">
+                <div class="panel-header">
+                    <div>
+                        <span class="card-label">PROBLEMAS ENCONTRADOS</span>
+                        <h3>O que precisa ser corrigido</h3>
+                    </div>
+                    <div id="issueCount" class="issue-count">0 problemas</div>
+                </div>
+
+                <div class="filter-row" id="issueFilters">
+                    <button class="filter active" data-filter="all" type="button">Todos</button>
+                    <button class="filter" data-filter="high" type="button">Alto</button>
+                    <button class="filter" data-filter="medium" type="button">Médio</button>
+                    <button class="filter" data-filter="low" type="button">Baixo</button>
+                </div>
+
+                <div id="issues" class="issues-list"></div>
+            </div>
+
+            <div class="details-grid">
+                <article class="info-panel glass-card">
+                    <div class="tabs" role="tablist">
+                        <button class="analysis-tab active" data-tab="summary" type="button">Resumo</button>
+                        <button class="analysis-tab" data-tab="details" type="button">Detalhes</button>
+                        <button class="analysis-tab" data-tab="recommendations" type="button">Recomendações</button>
+                    </div>
+                    <div id="tabContent" class="tab-content"></div>
+                </article>
+
+                <article class="site-meta glass-card">
+                    <span class="card-label">DADOS DA ANÁLISE</span>
+                    <div class="meta-row"><span>Status HTTP</span><strong id="metaStatus">—</strong></div>
+                    <div class="meta-row"><span>Content-Type</span><strong id="metaType">—</strong></div>
+                    <div class="meta-row"><span>Título</span><strong id="metaTitle">—</strong></div>
+                    <div class="meta-row"><span>Imagens</span><strong id="metaImages">—</strong></div>
+                    <div class="meta-row"><span>Links</span><strong id="metaLinks">—</strong></div>
+                </article>
+            </div>
+        </section>
+    </main>
+
+    <section id="chat" class="chat hidden" aria-label="Assistente DEVFIX">
+        <div class="chat-header">
+            <div><span class="eyebrow">DEVFIX ASSISTANT</span><h2>Entenda seu diagnóstico.</h2></div>
+            <button id="closeChat" class="chat-close" type="button" aria-label="Fechar chat">×</button>
+        </div>
+        <div id="chatMessages" class="chat-messages">
+            <div class="chat-message assistant"><strong>DEVFIX</strong><p>Posso explicar qualquer problema encontrado na análise e mostrar o que deve ser corrigido.</p></div>
+        </div>
+        <div class="chat-input"><input id="chatInput" type="text" name="message" placeholder="Pergunte sobre este diagnóstico..." autocomplete="on" aria-label="Mensagem para o assistente"><button id="chatButton" type="button">→</button></div>
+    </section>
+    <button id="openChat" class="chat-open" type="button" aria-label="Abrir chat">✦</button>
+
+<script>
+let currentAnalysis = null;
+let currentFilter = "all";
+let currentTab = "summary";
+
+const chat = document.getElementById("chat");
+const closeChat = document.getElementById("closeChat");
+const openChat = document.getElementById("openChat");
+const chatInput = document.getElementById("chatInput");
+const chatButton = document.getElementById("chatButton");
+const chatMessages = document.getElementById("chatMessages");
+
+const button = document.getElementById("analyzeButton");
+const input = document.getElementById("urlInput");
+const status = document.getElementById("status");
+const results = document.getElementById("results");
+const issuesContainer = document.getElementById("issues");
+const scoreElement = document.getElementById("score");
+const scoreRing = document.getElementById("scoreRing");
+const categoryGrid = document.getElementById("categoryGrid");
+const issueCount = document.getElementById("issueCount");
+const tabContent = document.getElementById("tabContent");
+const resultsTitle = document.getElementById("resultsTitle");
+const resultsUrl = document.getElementById("resultsUrl");
+const newAnalysis = document.getElementById("newAnalysis");
+
+const themeToggle = document.getElementById("themeToggle");
+const themeMenu = document.getElementById("themeMenu");
+const themeOptions = document.querySelectorAll(".theme-option");
+const customThemeToggle = document.getElementById("customThemeToggle");
+const customThemeMenu = document.getElementById("customThemeMenu");
+const customThemeOptions = document.querySelectorAll(".custom-theme-option");
+
+const severityLabels = { high: "Alto", medium: "Médio", low: "Baixo", alto: "Alto", médio: "Médio", baixo: "Baixo" };
+const issueTypeLabels = { erro: "Erro", aviso: "Aviso", informação: "Informação" };
+const categoryMap = {
+    seo: { label: "SEO", icon: "⌁" },
+    accessibility: { label: "Acessibilidade", icon: "◉" },
+    html: { label: "HTML", icon: "</>" },
+    css: { label: "Estilo", icon: "◇" },
+    javascript: { label: "JavaScript", icon: "JS" },
+    mobile: { label: "Mobile", icon: "⌁" },
+    performance: { label: "Performance", icon: "◌" },
+    security: { label: "Segurança", icon: "◇" }
+};
+const displayCategories = ["seo", "accessibility", "html", "performance", "security"];
+
+function normalizeSeverity(value) {
+    const raw = String(value ?? "").toLowerCase().trim();
+    if (["high", "alto", "crítico", "critico"].includes(raw)) return "high";
+    if (["medium", "médio", "medio", "atenção", "atencao"].includes(raw)) return "medium";
+    return "low";
+}
+
+function calculateScore(issues) {
+    let score = 100;
+    for (const issue of issues) {
+        const severityScore = Number(issue.score ?? 1);
+        score -= Math.max(0, Math.min(10, severityScore - 1));
+    }
+    return Math.max(0, Math.round(score));
+}
+
+function getCategoryIssues(issues, category) {
+    if (category === "html") {
+        return issues.filter(i => ["html", "css", "javascript", "mobile"].includes(String(i.category || "").toLowerCase()));
+    }
+    return issues.filter(i => String(i.category || "").toLowerCase() === category);
+}
+
+function categoryState(categoryIssues) {
+    if (!categoryIssues.length) return { label: "Bom", tone: "good" };
+    const severities = categoryIssues.map(i => normalizeSeverity(i.severity));
+    if (severities.includes("high")) return { label: "Crítico", tone: "bad" };
+    if (severities.includes("medium")) return { label: "Atenção", tone: "warn" };
+    return { label: "Atenção", tone: "warn" };
+}
+
+function analyze() {
+    const url = input.value.trim();
+    if (!url) {
+        status.textContent = "Digite uma URL para começar.";
+        input.focus();
+        return;
+    }
+
+    if (window.location.protocol === "file:") {
+        status.textContent = "Este arquivo é uma prévia visual. Para analisar sites de verdade, abra o DEVFIX pelo Flask em http://127.0.0.1:5000/.";
+        status.classList.remove("loading");
+        return;
+    }
+
+    status.textContent = "Analisando site...";
+    status.classList.add("loading");
+    button.disabled = true;
+    button.classList.add("loading");
+    results.classList.add("hidden");
+
+    fetch("/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url })
+    })
+        .then(async response => {
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || "Erro ao analisar.");
+            return data;
+        })
+        .then(data => {
+            renderResults(data);
+            status.textContent = "Análise concluída.";
+            status.classList.remove("loading");
+        })
+        .catch(error => {
+            console.error("Erro na análise:", error);
+            status.textContent = error.message;
+            status.classList.remove("loading");
+        })
+        .finally(() => {
+            button.disabled = false;
+            button.classList.remove("loading");
+        });
+}
+
+button.addEventListener("click", analyze);
+input.addEventListener("keydown", event => {
+    if (event.key === "Enter") analyze();
+});
+
+const LAST_ANALYSIS_KEY = "devfix-last-analysis";
+
+function saveLastAnalysis(data) {
+    try {
+        localStorage.setItem(LAST_ANALYSIS_KEY, JSON.stringify(data));
+    } catch (error) {
+        console.warn("Não foi possível salvar a última análise localmente:", error);
+    }
+}
+
+function loadLastAnalysis() {
+    try {
+        const saved = localStorage.getItem(LAST_ANALYSIS_KEY);
+        if (!saved) return null;
+
+        const data = JSON.parse(saved);
+        if (!data || typeof data !== "object") return null;
+        return data;
+    } catch (error) {
+        console.warn("Não foi possível restaurar a última análise:", error);
+        localStorage.removeItem(LAST_ANALYSIS_KEY);
+        return null;
+    }
+}
+
+function clearLastAnalysis() {
+    localStorage.removeItem(LAST_ANALYSIS_KEY);
+}
+
+function renderResults(data, options = {}) {
+    currentAnalysis = data;
+    if (!options.restored) {
+        saveLastAnalysis(data);
+    }
+    const issues = Array.isArray(data.issues) ? data.issues : [];
+    const score = calculateScore(issues);
+
+    results.classList.remove("hidden");
+    if (options.restored) {
+        chat.classList.remove("hidden");
+        chat.style.display = "none";
+        openChat.style.display = "flex";
+    } else {
+        chat.classList.remove("hidden");
+        chat.style.display = "flex";
+        openChat.style.display = "none";
+    }
+
+    resultsTitle.textContent = "Diagnóstico do site";
+    resultsUrl.textContent = data.url || input.value.trim();
+    scoreElement.textContent = score;
+    scoreRing.style.setProperty("--score", score);
+    document.getElementById("metaStatus").textContent = data.status_code ?? "—";
+    document.getElementById("metaType").textContent = data.content_type || "—";
+    document.getElementById("metaTitle").textContent = data.html?.title || "Não encontrado";
+    document.getElementById("metaImages").textContent = data.html?.images ?? "—";
+    document.getElementById("metaLinks").textContent = data.html?.links ?? "—";
+    issueCount.textContent = `${issues.length} ${issues.length === 1 ? "problema" : "problemas"}`;
+
+    document.getElementById("scoreCaption").textContent = score >= 90
+        ? "Excelente base. Poucos pontos precisam de atenção."
+        : score >= 70
+            ? "Boa base, mas existem pontos que merecem atenção."
+            : score >= 40
+                ? "Existem problemas relevantes que devem ser priorizados."
+                : "O site apresenta problemas importantes que precisam de correção.";
+
+    renderCategories(issues);
+    renderIssues(issues);
+    renderTab(currentTab);
+
+    results.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function renderCategories(issues) {
+    categoryGrid.innerHTML = displayCategories.map(category => {
+        const info = categoryMap[category];
+        const state = categoryState(getCategoryIssues(issues, category));
+        return `<div class="category-item">
+            <div class="category-icon">${escapeHtml(info.icon)}</div>
+            <div class="category-copy"><span>${escapeHtml(info.label)}</span><strong class="${state.tone}">${escapeHtml(state.label)}</strong></div>
+            <div class="category-dot ${state.tone}"></div>
+        </div>`;
+    }).join("");
+}
+
+function renderIssues(issues) {
+    const filtered = currentFilter === "all"
+        ? issues
+        : issues.filter(issue => normalizeSeverity(issue.severity) === currentFilter);
+
+    if (!filtered.length) {
+        issuesContainer.innerHTML = `<div class="empty-state"><div class="empty-icon">✓</div><h3>${issues.length ? "Nenhum problema neste filtro" : "Nenhum problema encontrado"}</h3><p>${issues.length ? "Altere o filtro para visualizar outros resultados." : "O DEVFIX não encontrou problemas nas verificações atuais."}</p></div>`;
+        return;
+    }
+
+    issuesContainer.innerHTML = filtered.map((issue, index) => {
+        const severity = normalizeSeverity(issue.severity);
+        const severityLabel = severityLabels[String(issue.severity || "").toLowerCase()] || severityLabels[severity];
+        const typeLabel = issueTypeLabels[issue.type] || issue.type || "Não definido";
+        const category = categoryMap[String(issue.category || "").toLowerCase()]?.label || issue.category || "Geral";
+        const sourceLine = issue.line ? `<span class="detail-chip">Linha ${escapeHtml(issue.line)}</span>` : "";
+        const multipleLines = Array.isArray(issue.lines) && issue.lines.length > 1 ? `<span class="detail-chip">Linhas ${escapeHtml(issue.lines.join(", "))}</span>` : "";
+        const aiComment = `<div class="ai-note"><span>✦ ANÁLISE CLAUDE</span><p>${issue.ai_comment ? escapeHtml(issue.ai_comment) : "A análise Claude aparecerá aqui quando a integração estiver ativa."}</p></div>`;
+        const example = issue.example ? `<div class="code-block"><span>EXEMPLO DE CORREÇÃO</span><code>${escapeHtml(issue.example)}</code></div>` : "";
+
+        return `<article class="issue-card ${severity}" data-severity="${severity}">
+            <div class="issue-marker"><i></i></div>
+            <div class="issue-content">
+                <div class="issue-title-row">
+                    <div><span class="issue-index">${String(index + 1).padStart(2, "0")}</span><h4>${escapeHtml(issue.message || "Problema encontrado")}</h4></div>
+                    <span class="severity-pill ${severity}">${escapeHtml(severityLabel)}</span>
+                </div>
+                <p class="issue-problem">${escapeHtml(issue.problem || "")}</p>
+                <div class="issue-meta"><span>${escapeHtml(typeLabel)}</span><span>${escapeHtml(category)}</span>${sourceLine}${multipleLines}</div>
+                <div class="issue-resolution"><div><span>COMO MELHORAR</span><p>${escapeHtml(issue.recommendation || "")}</p></div>${example}</div>
+                ${aiComment}
+            </div>
+        </article>`;
+    }).join("");
+}
+
+function renderTab(tab) {
+    if (!currentAnalysis) return;
+    const issues = currentAnalysis.issues || [];
+    const score = calculateScore(issues);
+
+    if (tab === "summary") {
+        tabContent.innerHTML = `<div class="tab-summary"><div class="summary-big"><strong>${issues.length}</strong><span>pontos encontrados</span></div><div><h4>O que isso significa?</h4><p>O diagnóstico reúne problemas reais detectados no HTML recebido. Priorize os itens de maior severidade e use a recomendação de cada card como guia de correção.</p></div><div><h4>Pontuação atual</h4><p>${score}/100. A pontuação é calculada a partir das penalidades dos checks encontrados.</p></div></div>`;
+    } else if (tab === "details") {
+        const title = currentAnalysis.html?.title || "Não encontrado";
+        const description = currentAnalysis.html?.description || "Não encontrada";
+        tabContent.innerHTML = `<div class="detail-list"><div><span>URL final</span><strong>${escapeHtml(currentAnalysis.url || "—")}</strong></div><div><span>Título</span><strong>${escapeHtml(title)}</strong></div><div><span>Meta description</span><strong>${escapeHtml(description)}</strong></div><div><span>Status HTTP</span><strong>${escapeHtml(currentAnalysis.status_code ?? "—")}</strong></div></div>`;
+    } else {
+        const recommendations = issues.map(issue => issue.recommendation).filter(Boolean).filter((value, index, arr) => arr.indexOf(value) === index).slice(0, 8);
+        tabContent.innerHTML = recommendations.length ? `<div class="recommendation-list">${recommendations.map((item, index) => `<div><b>${String(index + 1).padStart(2, "0")}</b><p>${escapeHtml(item)}</p></div>`).join("")}</div>` : `<div class="empty-tab"><h4>Nenhuma recomendação necessária</h4><p>Não há recomendações adicionais para os checks atuais.</p></div>`;
+    }
+}
+
+document.querySelectorAll(".filter").forEach(filter => {
+    filter.addEventListener("click", () => {
+        currentFilter = filter.dataset.filter;
+        document.querySelectorAll(".filter").forEach(item => item.classList.remove("active"));
+        filter.classList.add("active");
+        renderIssues(currentAnalysis?.issues || []);
+    });
+});
+
+document.querySelectorAll(".analysis-tab").forEach(tab => {
+    tab.addEventListener("click", () => {
+        currentTab = tab.dataset.tab;
+        document.querySelectorAll(".analysis-tab").forEach(item => item.classList.remove("active"));
+        tab.classList.add("active");
+        renderTab(currentTab);
+    });
+});
+
+newAnalysis.addEventListener("click", () => {
+    clearLastAnalysis();
+    currentAnalysis = null;
+    results.classList.add("hidden");
+    chat.style.display = "none";
+    openChat.style.display = "flex";
+    status.textContent = "";
+    input.value = "";
+    input.focus();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
+function escapeHtml(value) {
+    const div = document.createElement("div");
+    div.textContent = String(value ?? "");
+    return div.innerHTML;
+}
+
+closeChat.addEventListener("click", () => {
+    chat.style.display = "none";
+    openChat.style.display = "flex";
+});
+openChat.addEventListener("click", () => {
+    chat.style.display = "flex";
+    openChat.style.display = "none";
+});
+chatButton.addEventListener("click", sendChatMessage);
+chatInput.addEventListener("keydown", event => {
+    if (event.key === "Enter") sendChatMessage();
+});
+
+async function sendChatMessage() {
+    const message = chatInput.value.trim();
+    if (!message) return;
+    addChatMessage("Você", message);
+    chatInput.value = "";
+    chatInput.disabled = true;
+    chatButton.disabled = true;
+    try {
+        const response = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message, context: currentAnalysis }) });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Erro ao consultar a IA.");
+        addChatMessage("DEVFIX", data.response);
+    } catch (error) {
+        console.error("Erro no chat:", error);
+        addChatMessage("DEVFIX", "Não foi possível obter uma resposta da IA no momento.");
+    } finally {
+        chatInput.disabled = false;
+        chatButton.disabled = false;
+        chatInput.focus();
+    }
+}
+
+function addChatMessage(author, text) {
+    const div = document.createElement("div");
+    div.className = author === "Você" ? "chat-message user" : "chat-message assistant";
+    div.innerHTML = `<strong>${escapeHtml(author)}</strong><p>${escapeHtml(text)}</p>`;
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+let isDragging = false;
+let offsetX = 0;
+let offsetY = 0;
+const chatHeader = document.querySelector(".chat-header");
+chatHeader.addEventListener("pointerdown", event => {
+    if (event.target.closest("#closeChat")) return;
+    isDragging = true;
+    const rect = chat.getBoundingClientRect();
+    offsetX = event.clientX - rect.left;
+    offsetY = event.clientY - rect.top;
+    chat.style.right = "auto";
+    chat.style.bottom = "auto";
+    chatHeader.setPointerCapture(event.pointerId);
+});
+chatHeader.addEventListener("pointermove", event => {
+    if (!isDragging) return;
+    chat.style.left = `${event.clientX - offsetX}px`;
+    chat.style.top = `${event.clientY - offsetY}px`;
+});
+chatHeader.addEventListener("pointerup", event => {
+    isDragging = false;
+    if (chatHeader.hasPointerCapture(event.pointerId)) chatHeader.releasePointerCapture(event.pointerId);
+});
+chatHeader.addEventListener("pointercancel", () => { isDragging = false; });
+
+const customThemeBackgrounds = {
+    black: "/static/themes/custom/2196afa9babcb4faf730e241a5dd3cad.jpg",
+    white: "/static/themes/custom/e762fd01e73aac3a3ffad734fbec0979.jpg",
+    red: "/static/themes/custom/a603143cd5568406be843e976924697f.jpg",
+    blue: "/static/themes/custom/6c8158d7512985ff5726186bd848c036.jpg",
+    green: "/static/themes/custom/b24f896d5c33a611df0497d93d192862.jpg",
+    purple: "/static/themes/custom/2d83c9c59df963b2d7162abd0981c0e0.jpg",
+    orange: "/static/themes/custom/8282658b5da529a017af50d45c3d303d.jpg",
+    pink: "/static/themes/custom/77889a56dc8bc57b9d7903847cd29634.jpg",
+    cyan: "/static/themes/custom/6273d9cfd1b83372e3a9902eb3b63420.jpg",
+    gold: "/static/themes/custom/a72425545b2532c22cc447b64c121d9a.jpg"
+};
+
+themeToggle.addEventListener("click", () => {
+    themeMenu.classList.toggle("hidden");
+    customThemeMenu.classList.add("hidden");
+});
+customThemeToggle.addEventListener("click", () => {
+    customThemeMenu.classList.toggle("hidden");
+    themeMenu.classList.add("hidden");
+});
+
+document.addEventListener("click", event => {
+    if (!event.target.closest(".theme-picker")) {
+        themeMenu.classList.add("hidden");
+        customThemeMenu.classList.add("hidden");
+    }
+});
+
+function setBaseTheme(theme) {
+    if (theme === "black") document.documentElement.setAttribute("data-theme", "black");
+    else document.documentElement.setAttribute("data-theme", theme);
+}
+function applyTheme(theme) {
+    setBaseTheme(theme);
+    document.body.classList.remove("custom-theme");
+    delete document.body.dataset.customTheme;
+    document.documentElement.style.removeProperty("--custom-background");
+    localStorage.setItem("devfix-theme", theme);
+    localStorage.removeItem("devfix-custom-theme");
+}
+themeOptions.forEach(option => option.addEventListener("click", () => {
+    applyTheme(option.dataset.themeOption);
+    themeMenu.classList.add("hidden");
+}));
+function applyCustomTheme(theme) {
+    const background = customThemeBackgrounds[theme];
+    if (!background) return;
+    setBaseTheme(theme);
+    document.documentElement.style.setProperty("--custom-background", `url("${background}")`);
+    document.body.classList.add("custom-theme");
+    document.body.dataset.customTheme = theme;
+    localStorage.setItem("devfix-custom-theme", theme);
+    localStorage.removeItem("devfix-theme");
+}
+customThemeOptions.forEach(option => option.addEventListener("click", () => {
+    applyCustomTheme(option.dataset.customTheme);
+    customThemeMenu.classList.add("hidden");
+}));
+
+const savedCustomTheme = localStorage.getItem("devfix-custom-theme");
+const savedTheme = localStorage.getItem("devfix-theme");
+if (savedCustomTheme) applyCustomTheme(savedCustomTheme);
+else if (savedTheme) applyTheme(savedTheme);
+
+
+// Restaura automaticamente a última análise depois de recarregar a página
+// ou reiniciar o servidor. O resultado fica salvo apenas no navegador.
+const restoredAnalysis = loadLastAnalysis();
+if (restoredAnalysis) {
+    if (restoredAnalysis.url) {
+        input.value = restoredAnalysis.url;
+    }
+    renderResults(restoredAnalysis, { restored: true });
+    status.textContent = "Última análise restaurada.";
+    status.classList.remove("loading");
+}
+
+</script>
+</body>
+</html>

@@ -1,0 +1,2281 @@
+from bs4 import BeautifulSoup
+from urllib.parse import urlparse
+
+
+def _issue(
+    check,
+    issue_type,
+    severity,
+    category,
+    message,
+    problem,
+    recommendation,
+    example=None,
+    score=1,
+):
+    issue = {
+        "check": check,
+        "type": issue_type,
+        "severity": severity,
+        "category": category,
+        "message": message,
+        "problem": problem,
+        "recommendation": recommendation,
+        "score": score,
+    }
+
+    if example:
+        issue["example"] = example
+
+    return issue
+
+
+def run_checks(html, url):
+    soup = BeautifulSoup(html, "html.parser")
+    issues = []
+
+    # ============================================================
+    # 1. TITLE AUSENTE
+    # ============================================================
+
+    title = soup.find("title")
+
+    if not title or not title.get_text(strip=True):
+        issues.append(_issue(
+            check=1,
+            issue_type="erro",
+            severity="alto",
+            category="seo",
+            message="A página não possui um título.",
+            problem="A página não possui uma tag <title> com conteúdo.",
+            recommendation="Adicione um título descritivo dentro do <head>.",
+            example="<title>Nome da página</title>",
+            score=10,
+        ))
+
+
+    # ============================================================
+    # 2. META DESCRIPTION AUSENTE
+    # ============================================================
+
+    description = soup.find(
+        "meta",
+        attrs={"name": "description"}
+    )
+
+    if not description or not description.get("content", "").strip():
+        issues.append(_issue(
+            check=2,
+            issue_type="aviso",
+            severity="médio",
+            category="seo",
+            message="Meta description ausente.",
+            problem="A página não possui uma descrição para mecanismos de busca.",
+            recommendation="Adicione uma meta description relevante.",
+            example='<meta name="description" content="Descrição da página">',
+            score=5,
+        ))
+
+
+    # ============================================================
+    # 3. IMAGENS SEM ALT
+    # ============================================================
+
+    images_without_alt = []
+
+    for image in soup.find_all("img"):
+        if not image.has_attr("alt"):
+            images_without_alt.append(image)
+
+    if images_without_alt:
+        issues.append(_issue(
+            check=3,
+            issue_type="erro",
+            severity="alto",
+            category="acessibilidade",
+            message=f"{len(images_without_alt)} imagem(ns) sem atributo alt.",
+            problem="Uma ou mais imagens não possuem texto alternativo.",
+            recommendation="Adicione um atributo alt apropriado às imagens informativas.",
+            example='<img src="imagem.jpg" alt="Descrição da imagem">',
+            score=8,
+        ))
+
+
+    # ============================================================
+    # 4. H1 AUSENTE
+    # ============================================================
+
+    h1_tags = soup.find_all("h1")
+
+    if not h1_tags:
+        issues.append(_issue(
+            check=4,
+            issue_type="aviso",
+            severity="médio",
+            category="seo",
+            message="H1 ausente.",
+            problem="A página não possui um título principal H1.",
+            recommendation="Adicione um H1 que represente o assunto principal da página.",
+            example="<h1>Título principal</h1>",
+            score=7,
+        ))
+
+
+    # ============================================================
+    # 5. MUTIPLOS H1
+    # ============================================================
+
+    if len(h1_tags) > 1:
+        issues.append(_issue(
+            check=5,
+            issue_type="aviso",
+            severity="baixo",
+            category="seo",
+            message=f"A página possui {len(h1_tags)} elementos H1.",
+            problem="Existem vários títulos H1 na mesma página.",
+            recommendation="Use uma estrutura de headings clara e mantenha um H1 principal quando apropriado.",
+            example="<h1>Título principal</h1>",
+            score=4,
+        ))
+
+
+    # ============================================================
+    # 6. HTML SEM LANG
+    # ============================================================
+
+    html_tag = soup.find("html")
+
+    if not html_tag or not html_tag.get("lang", "").strip():
+        issues.append(_issue(
+            check=6,
+            issue_type="erro",
+            severity="médio",
+            category="acessibilidade",
+            message="O elemento HTML não possui lang.",
+            problem="O idioma principal da página não foi declarado.",
+            recommendation="Adicione o atributo lang ao elemento <html>.",
+            example='<html lang="pt-BR">',
+            score=7,
+        ))
+
+
+    # ============================================================
+    # 7. LANG INVALIDO OU INCOMPLETO
+    # ============================================================
+
+    if html_tag:
+        lang = html_tag.get("lang", "").strip()
+
+        if lang and len(lang) < 2:
+            issues.append(_issue(
+                check=7,
+                issue_type="aviso",
+                severity="baixo",
+                category="acessibilidade",
+                message="O atributo lang parece inválido.",
+                problem="O valor informado para lang é muito curto.",
+                recommendation="Utilize um código de idioma válido, como pt-BR ou en.",
+                example='<html lang="pt-BR">',
+                score=4,
+            ))
+
+
+    # ============================================================
+    # 8. CHARSET AUSENTE
+    # ============================================================
+
+    charset = soup.find(
+        "meta",
+        attrs={"charset": True}
+    )
+
+    if not charset:
+        issues.append(_issue(
+            check=8,
+            issue_type="erro",
+            severity="médio",
+            category="html",
+            message="Charset ausente.",
+            problem="A página não declara explicitamente sua codificação de caracteres.",
+            recommendation="Adicione uma declaração de charset.",
+            example='<meta charset="UTF-8">',
+            score=6,
+        ))
+
+
+    # ============================================================
+    # 9. CHARSET DIFERENTE DE UTF-8
+    # ============================================================
+
+    if charset:
+        charset_value = charset.get("charset", "").strip().lower()
+
+        if charset_value and charset_value != "utf-8":
+            issues.append(_issue(
+                check=9,
+                issue_type="aviso",
+                severity="médio",
+                category="html",
+                message="A página não utiliza UTF-8.",
+                problem=f"O charset encontrado é {charset_value}.",
+                recommendation="Prefira UTF-8 para melhor compatibilidade com caracteres.",
+                example='<meta charset="UTF-8">',
+                score=4,
+            ))
+
+
+    # ============================================================
+    # 10. VIEWPORT AUSENTE
+    # ============================================================
+
+    viewport = soup.find(
+        "meta",
+        attrs={"name": "viewport"}
+    )
+
+    if not viewport:
+        issues.append(_issue(
+            check=10,
+            issue_type="aviso",
+            severity="médio",
+            category="mobile",
+            message="Meta viewport ausente.",
+            problem="A página não define como deve ser dimensionada em dispositivos móveis.",
+            recommendation="Adicione uma meta viewport adequada.",
+            example='<meta name="viewport" content="width=device-width, initial-scale=1.0">',
+            score=6,
+        ))
+
+    # ============================================================
+    # 11. <main> AUSENTE
+    # ============================================================
+
+    if not soup.find("main"):
+        issues.append(_issue(
+            check=11,
+            issue_type="aviso",
+            severity="baixo",
+            category="html",
+            message="Elemento <main> ausente.",
+            problem="A página não possui uma região principal identificada semanticamente.",
+            recommendation="Use <main> para envolver o conteúdo principal da página.",
+            example="<main>Conteúdo principal</main>",
+            score=2,
+        ))
+
+
+    # ============================================================
+    # 12. <header> AUSENTE
+    # ============================================================
+
+    if not soup.find("header"):
+        issues.append(_issue(
+            check=12,
+            issue_type="informação",
+            severity="baixo",
+            category="html",
+            message="Elemento <header> não encontrado.",
+            problem="A página não possui um elemento header identificável.",
+            recommendation="Considere utilizar <header> quando houver uma área introdutória ou cabeçalho semântico.",
+            example="<header><h1>Meu site</h1></header>",
+            score=1,
+        ))
+
+
+    # ============================================================
+    # 13. <footer> AUSENTE
+    # ============================================================
+
+    if not soup.find("footer"):
+        issues.append(_issue(
+            check=13,
+            issue_type="informação",
+            severity="baixo",
+            category="html",
+            message="Elemento <footer> não encontrado.",
+            problem="A página não possui um rodapé semântico identificável.",
+            recommendation="Considere utilizar <footer> quando houver conteúdo de rodapé.",
+            example="<footer>© 2026 Meu site</footer>",
+            score=1,
+        ))
+
+
+    # ============================================================
+    # 14. <nav> SEM LINKS
+    # ============================================================
+
+    nav_without_links = []
+
+    for nav in soup.find_all("nav"):
+        if not nav.find("a", href=True):
+            nav_without_links.append(nav)
+
+    if nav_without_links:
+        issues.append(_issue(
+            check=14,
+            issue_type="aviso",
+            severity="médio",
+            category="acessibilidade",
+            message=f"{len(nav_without_links)} elemento(s) <nav> sem links.",
+            problem="Um elemento de navegação não possui links detectáveis.",
+            recommendation="Adicione links de navegação ou utilize outro elemento semântico.",
+            example='<nav><a href="/inicio">Início</a></nav>',
+            score=5,
+        ))
+
+
+    # ============================================================
+    # 15. <a> SEM HREF
+    # ============================================================
+
+    links_without_href = []
+
+    for link in soup.find_all("a"):
+        if not link.get("href"):
+            links_without_href.append(link)
+
+    if links_without_href:
+        issues.append(_issue(
+            check=15,
+            issue_type="aviso",
+            severity="médio",
+            category="html",
+            message=f"{len(links_without_href)} link(s) sem href.",
+            problem="Um ou mais elementos <a> não possuem destino definido.",
+            recommendation="Adicione href quando o elemento funcionar como link.",
+            example='<a href="/contato">Contato</a>',
+            score=5,
+        ))
+
+
+    # ============================================================
+    # 16. <a> SEM TEXTO ACESSÍVEL
+    # ============================================================
+
+    links_without_accessible_text = []
+
+    for link in soup.find_all("a"):
+        text = link.get_text(" ", strip=True)
+        aria_label = link.get("aria-label", "").strip()
+        title = link.get("title", "").strip()
+
+        if not text and not aria_label and not title:
+            links_without_accessible_text.append(link)
+
+    if links_without_accessible_text:
+        issues.append(_issue(
+            check=16,
+            issue_type="erro",
+            severity="alto",
+            category="acessibilidade",
+            message=f"{len(links_without_accessible_text)} link(s) sem texto acessível.",
+            problem="Um ou mais links não possuem texto ou outro nome acessível detectável.",
+            recommendation="Forneça texto, aria-label ou outro nome acessível adequado.",
+            example='<a href="/contato" aria-label="Entre em contato">...</a>',
+            score=9,
+        ))
+
+
+    # ============================================================
+    # 17. <img> SEM SRC
+    # ============================================================
+
+    images_without_src = []
+
+    for image in soup.find_all("img"):
+        if not image.get("src"):
+            images_without_src.append(image)
+
+    if images_without_src:
+        issues.append(_issue(
+            check=17,
+            issue_type="erro",
+            severity="médio",
+            category="html",
+            message=f"{len(images_without_src)} imagem(ns) sem src.",
+            problem="Uma ou mais imagens não possuem uma fonte definida.",
+            recommendation="Adicione um atributo src válido ou remova a imagem se ela não for necessária.",
+            example='<img src="/images/foto.webp" alt="Descrição">',
+            score=6,
+        ))
+
+
+    # ============================================================
+    # 18. <img> COM ALT VAZIO
+    # ============================================================
+
+    images_empty_alt = []
+
+    for image in soup.find_all("img"):
+        if image.has_attr("alt") and not image.get("alt", "").strip():
+            images_empty_alt.append(image)
+
+    if images_empty_alt:
+        issues.append(_issue(
+            check=18,
+            issue_type="informação",
+            severity="baixo",
+            category="acessibilidade",
+            message=f"{len(images_empty_alt)} imagem(ns) possuem alt vazio.",
+            problem="Uma ou mais imagens possuem alt vazio.",
+            recommendation="Use alt vazio somente quando a imagem for realmente decorativa; caso contrário, forneça uma descrição.",
+            example='<img src="decorativa.svg" alt="">',
+            score=2,
+        ))
+
+
+    # ============================================================
+    # 19. SCRIPT EXTERNO SEM SRC VÁLIDO
+    # ============================================================
+
+    external_scripts_without_src = []
+
+    for script in soup.find_all("script"):
+        if script.has_attr("src") and not script.get("src", "").strip():
+            external_scripts_without_src.append(script)
+
+    if external_scripts_without_src:
+        issues.append(_issue(
+            check=19,
+            issue_type="erro",
+            severity="médio",
+            category="javascript",
+            message=f"{len(external_scripts_without_src)} script(s) com src vazio.",
+            problem="Um ou mais scripts possuem o atributo src, mas sem um endereço válido.",
+            recommendation="Defina um src válido ou remova o atributo quando o script for inline.",
+            example='<script src="/static/app.js"></script>',
+            score=6,
+        ))
+
+
+    # ============================================================
+    # 20. CSS EXTERNO SEM HREF
+    # ============================================================
+
+    stylesheets_without_href = []
+
+    for link in soup.find_all("link"):
+        rel = link.get("rel", [])
+
+        if "stylesheet" in rel and not link.get("href", "").strip():
+            stylesheets_without_href.append(link)
+
+    if stylesheets_without_href:
+        issues.append(_issue(
+            check=20,
+            issue_type="erro",
+            severity="médio",
+            category="css",
+            message=f"{len(stylesheets_without_href)} folha(s) de estilo sem href válido.",
+            problem="Uma ou mais folhas de estilo não possuem um endereço definido.",
+            recommendation="Adicione um href válido para o arquivo CSS.",
+            example='<link rel="stylesheet" href="/static/style.css">',
+            score=6,
+        ))
+
+    # ============================================================
+    # 21. HIERARQUIA DE HEADINGS PROBLEMÁTICA
+    # ============================================================
+
+    headings = soup.find_all(["h1", "h2", "h3", "h4", "h5", "h6"])
+    heading_levels = [int(tag.name[1]) for tag in headings]
+
+    if heading_levels:
+        previous_level = heading_levels[0]
+        hierarchy_problem = False
+
+        for level in heading_levels[1:]:
+            if level > previous_level + 1:
+                hierarchy_problem = True
+                break
+
+            previous_level = level
+
+        if hierarchy_problem:
+            issues.append(_issue(
+                check=21,
+                issue_type="aviso",
+                severity="médio",
+                category="acessibilidade",
+                message="A hierarquia dos headings possui uma inconsistência.",
+                problem="Um heading pula níveis de forma que pode dificultar a compreensão da estrutura do conteúdo.",
+                recommendation="Organize os headings de forma hierárquica, evitando saltos desnecessários.",
+                example="<h1>Título</h1><h2>Seção</h2><h3>Subseção</h3>",
+                score=6,
+            ))
+
+
+    # ============================================================
+    # 22. SALTO GRANDE NA HIERARQUIA
+    # ============================================================
+
+    large_heading_skip = False
+    previous_level = None
+
+    for level in heading_levels:
+        if previous_level is not None and level > previous_level + 1:
+            large_heading_skip = True
+            break
+
+        previous_level = level
+
+    if large_heading_skip:
+        issues.append(_issue(
+            check=22,
+            issue_type="informação",
+            severity="baixo",
+            category="acessibilidade",
+            message="Foi detectado um salto grande entre níveis de heading.",
+            problem="A estrutura passa para um nível mais profundo sem utilizar os níveis intermediários.",
+            recommendation="Quando fizer sentido, utilize os níveis intermediários para representar melhor a estrutura.",
+            example="<h2>Seção</h2><h3>Subseção</h3>",
+                score=3,
+        ))
+
+
+    # ============================================================
+    # 23. PÁGINA SEM HEADINGS
+    # ============================================================
+
+    if not headings:
+        issues.append(_issue(
+            check=23,
+            issue_type="aviso",
+            severity="médio",
+            category="acessibilidade",
+            message="A página não possui headings.",
+            problem="Nenhum elemento h1 até h6 foi encontrado.",
+            recommendation="Adicione headings para estruturar o conteúdo quando a página possuir seções identificáveis.",
+            example="<h1>Título principal</h1>",
+                score=6,
+        ))
+
+
+    # ============================================================
+    # 24. BUTTON SEM TEXTO ACESSÍVEL
+    # ============================================================
+
+    buttons_without_text = []
+
+    for button in soup.find_all("button"):
+        text = button.get_text(" ", strip=True)
+        aria_label = button.get("aria-label", "").strip()
+        title = button.get("title", "").strip()
+
+        if not text and not aria_label and not title:
+            buttons_without_text.append(button)
+
+    if buttons_without_text:
+        issues.append(_issue(
+            check=24,
+            issue_type="erro",
+            severity="alto",
+            category="acessibilidade",
+            message=f"{len(buttons_without_text)} botão(ões) sem texto acessível.",
+            problem="Um ou mais botões não possuem um nome acessível detectável.",
+            recommendation="Adicione texto visível ou um aria-label descritivo.",
+            example='<button aria-label="Abrir menu">☰</button>',
+                score=9,
+        ))
+
+
+    # ============================================================
+    # 25. INPUT SEM LABEL
+    # ============================================================
+
+    inputs_without_label = []
+
+    for input_element in soup.find_all("input"):
+        input_type = input_element.get("type", "text").lower()
+
+        if input_type == "hidden":
+            continue
+
+        input_id = input_element.get("id", "").strip()
+        aria_label = input_element.get("aria-label", "").strip()
+        aria_labelledby = input_element.get("aria-labelledby", "").strip()
+
+        if aria_label or aria_labelledby:
+            continue
+
+        if not input_id:
+            inputs_without_label.append(input_element)
+            continue
+
+        label = soup.find("label", attrs={"for": input_id})
+
+        if not label:
+            inputs_without_label.append(input_element)
+
+    if inputs_without_label:
+        issues.append(_issue(
+            check=25,
+            issue_type="erro",
+            severity="alto",
+            category="acessibilidade",
+            message=f"{len(inputs_without_label)} campo(s) de entrada sem label.",
+            problem="Um ou mais campos não possuem uma identificação acessível detectável.",
+            recommendation="Associe o campo a uma label ou forneça um nome acessível apropriado.",
+            example='<label for="email">E-mail</label><input id="email" type="email">',
+                score=10,
+        ))
+
+
+    # ============================================================
+    # 26. FORM SEM METHOD
+    # ============================================================
+
+    forms_without_method = []
+
+    for form in soup.find_all("form"):
+        if not form.get("method"):
+            forms_without_method.append(form)
+
+    if forms_without_method:
+        issues.append(_issue(
+            check=26,
+            issue_type="informação",
+            severity="baixo",
+            category="html",
+            message=f"{len(forms_without_method)} formulário(s) sem method definido.",
+            problem="O formulário não define explicitamente o método de envio.",
+            recommendation="Defina method quando quiser deixar o comportamento do formulário explícito.",
+            example='<form method="post">',
+                score=2,
+        ))
+
+
+    # ============================================================
+    # 27. FORM SEM ACTION
+    # ============================================================
+
+    forms_without_action = []
+
+    for form in soup.find_all("form"):
+        if not form.get("action"):
+            forms_without_action.append(form)
+
+    if forms_without_action:
+        issues.append(_issue(
+            check=27,
+            issue_type="informação",
+            severity="baixo",
+            category="html",
+            message=f"{len(forms_without_action)} formulário(s) sem action definido.",
+            problem="O formulário não possui um destino de envio explícito.",
+            recommendation="Defina action quando o formulário precisar enviar os dados para um destino específico.",
+            example='<form action="/enviar" method="post">',
+                score=2,
+        ))
+
+
+    # ============================================================
+    # 28. META ROBOTS AUSENTE
+    # ============================================================
+
+    robots = soup.find(
+        "meta",
+        attrs={"name": lambda value: value and value.lower() == "robots"}
+    )
+
+    if not robots:
+        issues.append(_issue(
+            check=28,
+            issue_type="informação",
+            severity="baixo",
+            category="seo",
+            message="Meta robots não encontrada.",
+            problem="A página não possui uma meta robots explícita.",
+            recommendation="Adicione uma meta robots quando houver necessidade de definir instruções específicas para mecanismos de busca.",
+            example='<meta name="robots" content="index, follow">',
+            score=1,
+        ))
+
+
+    # ============================================================
+    # 29. CANONICAL AUSENTE
+    # ============================================================
+
+    canonical = soup.find(
+        "link",
+        attrs={"rel": lambda value: (
+            "canonical" in value if isinstance(value, list)
+            else value == "canonical"
+        )}
+    )
+
+    if not canonical or not canonical.get("href", "").strip():
+        issues.append(_issue(
+            check=29,
+            issue_type="informação",
+            severity="baixo",
+            category="seo",
+            message="URL canonical não encontrada.",
+            problem="A página não possui uma URL canônica explícita.",
+            recommendation="Considere adicionar uma canonical quando a página fizer parte de uma estrutura onde URLs duplicadas possam existir.",
+            example='<link rel="canonical" href="https://exemplo.com/pagina">',
+                score=2,
+        ))
+
+
+    # ============================================================
+    # 30. TITLE MUITO CURTO OU LONGO
+    # ============================================================
+
+    if title and title.get_text(strip=True):
+        title_text = title.get_text(" ", strip=True)
+        title_length = len(title_text)
+
+        if title_length < 10:
+            issues.append(_issue(
+                check=30,
+                issue_type="aviso",
+                severity="baixo",
+                category="seo",
+                message="O title parece muito curto.",
+                problem=f"O título possui apenas {title_length} caracteres.",
+                recommendation="Use um título mais descritivo e específico para representar melhor o conteúdo da página.",
+                example="<title>DEVFIX — Diagnóstico para sites</title>",
+                score=5,
+            ))
+
+        elif title_length > 60:
+            issues.append(_issue(
+                check=30,
+                issue_type="aviso",
+                severity="baixo",
+                category="seo",
+                message="O title parece muito longo.",
+                problem=f"O título possui {title_length} caracteres.",
+                recommendation="Considere reduzir o título e manter as informações mais importantes.",
+                example="<title>DEVFIX — Diagnóstico para sites</title>",
+            ))
+
+    # ============================================================
+    # 31. META DESCRIPTION MUITO CURTA
+    # ============================================================
+
+    if description and description.get("content", "").strip():
+        description_text = description.get("content", "").strip()
+
+        if len(description_text) < 50:
+            issues.append(_issue(
+                check=31,
+                issue_type="aviso",
+                severity="baixo",
+                category="seo",
+                message="A meta description parece muito curta.",
+                problem=f"A descrição possui apenas {len(description_text)} caracteres.",
+                recommendation="Crie uma descrição mais informativa e específica sobre o conteúdo da página.",
+                example='<meta name="description" content="Analise seu site com o DEVFIX e encontre problemas de SEO.">',
+            score=4,
+            ))
+
+
+    # ============================================================
+    # 32. META DESCRIPTION MUITO LONGA
+    # ============================================================
+
+    if description and description.get("content", "").strip():
+        description_text = description.get("content", "").strip()
+
+        if len(description_text) > 160:
+            issues.append(_issue(
+                check=32,
+                issue_type="aviso",
+                severity="baixo",
+                category="seo",
+                message="A meta description parece muito longa.",
+                problem=f"A descrição possui {len(description_text)} caracteres.",
+                recommendation="Reduza a descrição e mantenha as informações mais importantes.",
+                example='<meta name="description" content="Analise seu site com o DEVFIX.">',
+            score=4,
+            ))
+
+
+    # ============================================================
+    # 33. IDs DUPLICADOS
+    # ============================================================
+
+    ids = {}
+
+    for element in soup.find_all(attrs={"id": True}):
+        element_id = element.get("id", "").strip()
+
+        if element_id:
+            ids[element_id] = ids.get(element_id, 0) + 1
+
+    duplicate_ids = [
+        element_id
+        for element_id, count in ids.items()
+        if count > 1
+    ]
+
+    if duplicate_ids:
+        issues.append(_issue(
+            check=33,
+            issue_type="erro",
+            severity="médio",
+            category="html",
+            message=f"{len(duplicate_ids)} ID(s) duplicado(s) encontrado(s).",
+            problem="Existem elementos diferentes utilizando o mesmo atributo id.",
+            recommendation="Garanta que cada ID seja único dentro da página.",
+            example='<section id="sobre">Conteúdo</section>',
+            score=8,
+        ))
+
+
+    # ============================================================
+    # 34. ID VAZIO
+    # ============================================================
+
+    empty_ids = []
+
+    for element in soup.find_all(attrs={"id": True}):
+        if not element.get("id", "").strip():
+            empty_ids.append(element)
+
+    if empty_ids:
+        issues.append(_issue(
+            check=34,
+            issue_type="erro",
+            severity="baixo",
+            category="html",
+            message=f"{len(empty_ids)} elemento(s) possui(em) ID vazio.",
+            problem="Um ou mais elementos possuem um atributo id sem valor.",
+            recommendation="Remova o ID se ele não for necessário ou atribua um identificador válido.",
+            example='<section id="sobre">Conteúdo</section>',
+            score=3,
+        ))
+
+
+    # ============================================================
+    # 35. IFRAME SEM TITLE
+    # ============================================================
+
+    iframes_without_title = []
+
+    for iframe in soup.find_all("iframe"):
+        if not iframe.get("title", "").strip():
+            iframes_without_title.append(iframe)
+
+    if iframes_without_title:
+        issues.append(_issue(
+            check=35,
+            issue_type="erro",
+            severity="médio",
+            category="acessibilidade",
+            message=f"{len(iframes_without_title)} iframe(s) sem title.",
+            problem="Um ou mais iframes não possuem uma descrição acessível.",
+            recommendation="Adicione um atributo title descritivo ao iframe.",
+            example='<iframe src="mapa.html" title="Mapa da localização"></iframe>',
+            score=8,
+        ))
+
+
+    # ============================================================
+    # 36. VÍDEO SEM ALTERNATIVA DETECTÁVEL
+    # ============================================================
+
+    videos_without_alternative = []
+
+    for video in soup.find_all("video"):
+        has_track = video.find("track")
+        has_text = video.get_text(" ", strip=True)
+
+        if not has_track and not has_text:
+            videos_without_alternative.append(video)
+
+    if videos_without_alternative:
+        issues.append(_issue(
+            check=36,
+            issue_type="aviso",
+            severity="médio",
+            category="acessibilidade",
+            message=f"{len(videos_without_alternative)} vídeo(s) pode(m) não possuir alternativa acessível.",
+            problem="Não foi detectada uma faixa de texto ou alternativa dentro do elemento de vídeo.",
+            recommendation="Considere fornecer legendas, transcrição ou outra alternativa acessível quando necessário.",
+            example='<video controls><track kind="captions" src="legendas.vtt"></video>',
+            score=6,
+        ))
+
+
+    # ============================================================
+    # 37. ÁUDIO SEM ALTERNATIVA DETECTÁVEL
+    # ============================================================
+
+    audios_without_alternative = []
+
+    for audio in soup.find_all("audio"):
+        has_text = audio.get_text(" ", strip=True)
+
+        if not has_text:
+            audios_without_alternative.append(audio)
+
+    if audios_without_alternative:
+        issues.append(_issue(
+            check=37,
+            issue_type="aviso",
+            severity="baixo",
+            category="acessibilidade",
+            message=f"{len(audios_without_alternative)} áudio(s) pode(m) não possuir alternativa.",
+            problem="Não foi detectada uma alternativa textual dentro do elemento de áudio.",
+            recommendation="Forneça uma transcrição ou alternativa textual quando apropriado.",
+            example='<audio controls><source src="audio.mp3"></audio>',
+            score=4,
+        ))
+
+
+    # ============================================================
+    # 38. HTML MUITO GRANDE
+    # ============================================================
+
+    html_size = len(html.encode("utf-8"))
+
+    if html_size > 500_000:
+        issues.append(_issue(
+            check=38,
+            issue_type="aviso",
+            severity="médio",
+            category="performance",
+            message="O HTML da página é muito grande.",
+            problem=f"O documento possui aproximadamente {html_size // 1024} KB.",
+            recommendation="Reduza o HTML desnecessário e simplifique a estrutura quando possível.",
+            example="Mantenha o HTML enxuto e evite conteúdo desnecessário.",
+            score=7,
+        ))
+
+
+    # ============================================================
+    # 39. NÚMERO EXCESSIVO DE ELEMENTOS DOM
+    # ============================================================
+
+    elements = soup.find_all()
+
+    if len(elements) > 1500:
+        issues.append(_issue(
+            check=39,
+            issue_type="aviso",
+            severity="médio",
+            category="performance",
+            message="A página possui muitos elementos HTML.",
+            problem=f"Foram encontrados aproximadamente {len(elements)} elementos.",
+            recommendation="Revise a estrutura e remova elementos desnecessários quando possível.",
+            example="<main><section>Conteúdo</section></main>",
+            score=7,
+        ))
+
+
+    # ============================================================
+    # 40. MUITOS SCRIPTS EXTERNOS
+    # ============================================================
+
+    external_scripts = []
+
+    for script in soup.find_all("script"):
+        src = script.get("src", "").strip()
+
+        if src:
+            external_scripts.append(src)
+
+    if len(external_scripts) > 10:
+        issues.append(_issue(
+            check=40,
+            issue_type="aviso",
+            severity="médio",
+            category="javascript",
+            message="A página possui muitos scripts externos.",
+            problem=f"Foram encontrados {len(external_scripts)} scripts externos.",
+            recommendation="Revise os scripts utilizados e remova dependências desnecessárias.",
+            example='<script src="/static/app.js"></script>',
+            score=5,
+        ))
+
+    # ============================================================
+    # 41. MUITOS ARQUIVOS CSS EXTERNOS
+    # ============================================================
+
+    external_stylesheets = []
+
+    for link in soup.find_all("link"):
+        rel = link.get("rel", [])
+
+        if "stylesheet" in rel and link.get("href", "").strip():
+            external_stylesheets.append(link)
+
+    if len(external_stylesheets) > 5:
+        issues.append(_issue(
+            check=41,
+            issue_type="aviso",
+            severity="baixo",
+            category="css",
+            message="A página possui muitos arquivos CSS externos.",
+            problem=f"Foram encontrados {len(external_stylesheets)} arquivos CSS externos.",
+            recommendation="Revise os arquivos CSS e reduza dependências desnecessárias quando possível.",
+            example='<link rel="stylesheet" href="/static/style.css">',
+            score=4,
+        ))
+
+
+    # ============================================================
+    # 42. RECURSOS HTTP EM PÁGINA HTTPS
+    # ============================================================
+
+    if url.startswith("https://"):
+        insecure_resources = []
+
+        for tag in soup.find_all(src=True):
+            src = tag.get("src", "").strip()
+
+            if src.startswith("http://"):
+                insecure_resources.append(src)
+
+        for tag in soup.find_all(href=True):
+            href = tag.get("href", "").strip()
+
+            if href.startswith("http://"):
+                insecure_resources.append(href)
+
+        if insecure_resources:
+            issues.append(_issue(
+                check=42,
+                issue_type="erro",
+                severity="alto",
+                category="segurança",
+                message="Recursos HTTP encontrados em uma página HTTPS.",
+                problem=f"Foram encontrados {len(insecure_resources)} recurso(s) carregado(s) por HTTP.",
+                recommendation="Use HTTPS para os recursos carregados pela página.",
+                example="https://exemplo.com/script.js",
+            score=10,
+            ))
+
+
+    # ============================================================
+    # 43. IMAGENS SEM DIMENSÕES
+    # ============================================================
+
+    images_without_dimensions = []
+
+    for image in soup.find_all("img"):
+        if not image.get("width") or not image.get("height"):
+            images_without_dimensions.append(image)
+
+    if images_without_dimensions:
+        issues.append(_issue(
+            check=43,
+            issue_type="aviso",
+            severity="baixo",
+            category="performance",
+            message=f"{len(images_without_dimensions)} imagem(ns) sem dimensões definidas.",
+            problem="Uma ou mais imagens não possuem width e height definidos.",
+            recommendation="Defina dimensões apropriadas para ajudar a reduzir mudanças inesperadas no layout.",
+            example='<img src="imagem.webp" width="800" height="600" alt="Descrição">',
+            score=4,
+        ))
+
+
+    # ============================================================
+    # 44. MUITAS IMAGENS
+    # ============================================================
+
+    image_candidates = []
+
+    for image in soup.find_all("img"):
+        src = image.get("src", "").strip()
+
+        if src and any(
+            extension in src.lower()
+            for extension in [".png", ".jpg", ".jpeg", ".webp"]
+        ):
+            image_candidates.append(src)
+
+    if len(image_candidates) > 20:
+        issues.append(_issue(
+            check=44,
+            issue_type="aviso",
+            severity="baixo",
+            category="performance",
+            message="A página possui muitas imagens.",
+            problem=f"Foram encontradas {len(image_candidates)} imagens.",
+            recommendation="Otimize as imagens e utilize carregamento sob demanda quando apropriado.",
+            example='<img src="imagem.webp" loading="lazy" alt="Descrição">',
+            score=4,
+        ))
+
+
+    # ============================================================
+    # 45. IFRAME SEM LAZY LOADING
+    # ============================================================
+
+    iframes_without_lazy = []
+
+    for iframe in soup.find_all("iframe"):
+        if iframe.get("loading", "").lower() != "lazy":
+            iframes_without_lazy.append(iframe)
+
+    if iframes_without_lazy:
+        issues.append(_issue(
+            check=45,
+            issue_type="informação",
+            severity="baixo",
+            category="performance",
+            message=f"{len(iframes_without_lazy)} iframe(s) sem lazy loading.",
+            problem="Iframes podem carregar recursos mesmo quando estão fora da área inicialmente visível.",
+            recommendation="Considere loading=\"lazy\" para iframes que não precisam carregar imediatamente.",
+            example='<iframe src="mapa.html" loading="lazy" title="Mapa"></iframe>',
+            score=3,
+        ))
+
+
+    # ============================================================
+    # 46. VÍDEO SEM PRELOAD
+    # ============================================================
+
+    videos_without_preload = []
+
+    for video in soup.find_all("video"):
+        if not video.get("preload"):
+            videos_without_preload.append(video)
+
+    if videos_without_preload:
+        issues.append(_issue(
+            check=46,
+            issue_type="informação",
+            severity="baixo",
+            category="performance",
+            message=f"{len(videos_without_preload)} vídeo(s) sem preload definido.",
+            problem="O comportamento de carregamento do vídeo não foi definido explicitamente.",
+            recommendation="Defina preload de acordo com a necessidade do vídeo.",
+            example='<video controls preload="metadata"></video>',
+            score=3,
+        ))
+
+
+    # ============================================================
+    # 47. ÁUDIO SEM PRELOAD
+    # ============================================================
+
+    audios_without_preload = []
+
+    for audio in soup.find_all("audio"):
+        if not audio.get("preload"):
+            audios_without_preload.append(audio)
+
+    if audios_without_preload:
+        issues.append(_issue(
+            check=47,
+            issue_type="informação",
+            severity="baixo",
+            category="performance",
+            message=f"{len(audios_without_preload)} áudio(s) sem preload definido.",
+            problem="O comportamento de carregamento do áudio não foi definido explicitamente.",
+            recommendation="Defina preload de acordo com a necessidade do áudio.",
+            example='<audio controls preload="metadata"></audio>',
+            score=2,
+        ))
+
+
+    # ============================================================
+    # 48. IMAGENS SEM LOADING LAZY
+    # ============================================================
+
+    images_without_lazy = []
+
+    for image in soup.find_all("img"):
+        src = image.get("src", "").strip()
+
+        # Imagens acima da dobra podem precisar carregar imediatamente.
+        # A check é apenas um sinal para revisão, não um erro.
+        if src and image.get("loading", "").lower() != "lazy":
+            images_without_lazy.append(image)
+
+    if len(images_without_lazy) > 5:
+        issues.append(_issue(
+            check=48,
+            issue_type="informação",
+            severity="baixo",
+            category="performance",
+            message=f"{len(images_without_lazy)} imagem(ns) sem lazy loading.",
+            problem="Existem várias imagens sem carregamento sob demanda explicitamente definido.",
+            recommendation="Considere loading=\"lazy\" para imagens que ficam fora da área inicialmente visível.",
+            example='<img src="imagem.webp" loading="lazy" alt="Descrição">',
+            score=4,
+        ))
+
+
+    # ============================================================
+    # 49. LINKS EXTERNOS SEM REL NOOPENER
+    # ============================================================
+
+    external_target_links = []
+
+    for link in soup.find_all("a", href=True):
+        href = link.get("href", "").strip()
+
+        if link.get("target") == "_blank":
+            if href.startswith("http://") or href.startswith("https://"):
+                external_target_links.append(link)
+
+    missing_noopener = []
+
+    for link in external_target_links:
+        rel = link.get("rel", [])
+
+        if isinstance(rel, str):
+            rel = rel.split()
+
+        if "noopener" not in [value.lower() for value in rel]:
+            missing_noopener.append(link)
+
+    if missing_noopener:
+        issues.append(_issue(
+            check=49,
+            issue_type="aviso",
+            severity="médio",
+            category="segurança",
+            message=f"{len(missing_noopener)} link(s) externo(s) com target=\"_blank\" sem noopener.",
+            problem="Links externos que abrem uma nova aba não possuem noopener detectável.",
+            recommendation="Adicione rel=\"noopener noreferrer\" quando apropriado.",
+            example='<a href="https://exemplo.com" target="_blank" rel="noopener noreferrer">Site externo</a>',
+            score=5,
+        ))
+
+
+    # ============================================================
+    # 50. LINKS INTERNOS COM URL ABSOLUTA DESNECESSÁRIA
+    # ============================================================
+
+    internal_absolute_links = []
+
+    current_host = urlparse(url).netloc.lower()
+
+    if current_host:
+        for link in soup.find_all("a", href=True):
+            href = link.get("href", "").strip()
+
+            if not href.startswith(("http://", "https://")):
+                continue
+
+            parsed_href = urlparse(href)
+
+            if parsed_href.netloc.lower() == current_host:
+                internal_absolute_links.append(link)
+
+    if internal_absolute_links:
+        issues.append(_issue(
+            check=50,
+            issue_type="informação",
+            severity="baixo",
+            category="html",
+            message=f"{len(internal_absolute_links)} link(s) interno(s) usam URL absoluta.",
+            problem="Links para o próprio domínio estão usando URLs completas.",
+            recommendation="Considere utilizar caminhos relativos quando isso simplificar a manutenção do site.",
+            example='<a href="/contato">Contato</a>',
+            score=2,
+        ))
+
+    # ============================================================
+    # 51. META VIEWPORT COM CONFIGURAÇÃO INCOMPLETA
+    # ============================================================
+
+    if viewport:
+        viewport_content = viewport.get("content", "").lower()
+
+        if "width=device-width" not in viewport_content:
+            issues.append(_issue(
+                check=51,
+                issue_type="aviso",
+                severity="médio",
+                category="mobile",
+                message="A meta viewport não define width=device-width.",
+                problem="A configuração da viewport pode não utilizar corretamente a largura do dispositivo.",
+                recommendation="Considere utilizar width=device-width na configuração da viewport.",
+                example='<meta name="viewport" content="width=device-width, initial-scale=1.0">',
+                score=5,
+            ))
+
+
+    # ============================================================
+    # 52. META VIEWPORT SEM INITIAL-SCALE
+    # ============================================================
+
+    if viewport:
+        viewport_content = viewport.get("content", "").lower()
+
+        if "initial-scale" not in viewport_content:
+            issues.append(_issue(
+                check=52,
+                issue_type="aviso",
+                severity="baixo",
+                category="mobile",
+                message="A meta viewport não define initial-scale.",
+                problem="A página não informa explicitamente a escala inicial do viewport.",
+                recommendation="Considere definir initial-scale=1.0.",
+                example='<meta name="viewport" content="width=device-width, initial-scale=1.0">',
+                score=3,
+            ))
+
+
+    # ============================================================
+    # 53. LINKS VAZIOS
+    # ============================================================
+
+    empty_links = []
+
+    for link in soup.find_all("a", href=True):
+        href = link.get("href", "").strip()
+
+        if href in ("", "#"):
+            empty_links.append(link)
+
+    if empty_links:
+        issues.append(_issue(
+            check=53,
+            issue_type="aviso",
+            severity="médio",
+            category="html",
+            message=f"{len(empty_links)} link(s) possuem destino vazio.",
+            problem="Um ou mais links não possuem um destino útil definido.",
+            recommendation="Adicione um destino válido ou utilize um botão quando a ação não for navegação.",
+            example='<a href="/contato">Contato</a>',
+            score=5,
+        ))
+
+
+    # ============================================================
+    # 54. LINK COM JAVASCRIPT NO HREF
+    # ============================================================
+
+    javascript_links = []
+
+    for link in soup.find_all("a", href=True):
+        href = link.get("href", "").strip().lower()
+
+        if href.startswith("javascript:"):
+            javascript_links.append(link)
+
+    if javascript_links:
+        issues.append(_issue(
+            check=54,
+            issue_type="aviso",
+            severity="médio",
+            category="javascript",
+            message=f"{len(javascript_links)} link(s) utilizam javascript: no href.",
+            problem="Links estão sendo utilizados para executar JavaScript em vez de representar navegação.",
+            recommendation="Considere utilizar button para ações JavaScript.",
+            example='<button type="button">Abrir</button>',
+            score=5,
+        ))
+
+
+    # ============================================================
+    # 55. BOTÃO SEM TYPE
+    # ============================================================
+
+    buttons_without_type = []
+
+    for button in soup.find_all("button"):
+        if not button.get("type"):
+            buttons_without_type.append(button)
+
+    if buttons_without_type:
+        issues.append(_issue(
+            check=55,
+            issue_type="aviso",
+            severity="baixo",
+            category="html",
+            message=f"{len(buttons_without_type)} botão(ões) sem type definido.",
+            problem="Botões sem type podem assumir comportamento de submit dentro de formulários.",
+            recommendation="Defina explicitamente o tipo do botão.",
+            example='<button type="button">Abrir</button>',
+            score=3,
+        ))
+
+
+    # ============================================================
+    # 56. IMAGEM COM ALT MUITO LONGO
+    # ============================================================
+
+    long_alt_images = []
+
+    for image in soup.find_all("img"):
+        alt = image.get("alt")
+
+        if alt and len(alt.strip()) > 150:
+            long_alt_images.append(image)
+
+    if long_alt_images:
+        issues.append(_issue(
+            check=56,
+            issue_type="aviso",
+            severity="baixo",
+            category="acessibilidade",
+            message=f"{len(long_alt_images)} imagem(ns) possuem alt muito longo.",
+            problem="Textos alternativos excessivamente longos podem dificultar a navegação por leitores de tela.",
+            recommendation="Mantenha o alt objetivo e descreva apenas informações relevantes.",
+            example='<img src="produto.webp" alt="Tênis esportivo azul">',
+            score=3,
+        ))
+
+
+    # ============================================================
+    # 57. IMAGEM COM ALT SUSPEITO
+    # ============================================================
+
+    suspicious_alt_images = []
+
+    for image in soup.find_all("img"):
+        alt = image.get("alt", "").strip().lower()
+
+        if alt in ("image", "imagem", "photo", "foto", "picture", "img"):
+            suspicious_alt_images.append(image)
+
+    if suspicious_alt_images:
+        issues.append(_issue(
+            check=57,
+            issue_type="aviso",
+            severity="baixo",
+            category="acessibilidade",
+            message=f"{len(suspicious_alt_images)} imagem(ns) possuem alt pouco descritivo.",
+            problem="O texto alternativo parece ser genérico e não descreve adequadamente a imagem.",
+            recommendation="Use um texto alternativo que explique a informação relevante da imagem.",
+            example='<img src="produto.webp" alt="Tênis esportivo azul">',
+            score=4,
+        ))
+
+
+    # ============================================================
+    # 58. INPUT SEM TYPE EXPLÍCITO
+    # ============================================================
+
+    inputs_without_type = []
+
+    for input_element in soup.find_all("input"):
+        if not input_element.get("type"):
+            inputs_without_type.append(input_element)
+
+    if inputs_without_type:
+        issues.append(_issue(
+            check=58,
+            issue_type="informação",
+            severity="baixo",
+            category="html",
+            message=f"{len(inputs_without_type)} input(s) sem type explícito.",
+            problem="O campo não define explicitamente o tipo de entrada.",
+            recommendation="Defina type de acordo com a finalidade do campo.",
+            example='<input type="text" name="nome">',
+            score=2,
+        ))
+
+
+    # ============================================================
+    # 59. INPUT PASSWORD SEM AUTOCOMPLETE
+    # ============================================================
+
+    password_without_autocomplete = []
+
+    for input_element in soup.find_all("input"):
+        input_type = input_element.get("type", "").lower()
+
+        if input_type == "password" and not input_element.get("autocomplete"):
+            password_without_autocomplete.append(input_element)
+
+    if password_without_autocomplete:
+        issues.append(_issue(
+            check=59,
+            issue_type="aviso",
+            severity="baixo",
+            category="acessibilidade",
+            message=f"{len(password_without_autocomplete)} campo(s) de senha sem autocomplete.",
+            problem="O campo de senha não informa ao navegador como tratar o preenchimento automático.",
+            recommendation="Considere utilizar autocomplete apropriado para campos de senha.",
+            example='<input type="password" autocomplete="current-password">',
+            score=3,
+        ))
+
+
+    # ============================================================
+    # 60. DOCUMENTO SEM DOCTYPE HTML
+    # ============================================================
+
+    if not html.lstrip().lower().startswith("<!doctype html"):
+        issues.append(_issue(
+            check=60,
+            issue_type="erro",
+            severity="médio",
+            category="html",
+            message="DOCTYPE HTML ausente.",
+            problem="O documento não inicia com uma declaração HTML5 doctype detectável.",
+            recommendation="Adicione <!DOCTYPE html> no início do documento.",
+            example="<!DOCTYPE html>",
+            score=6,
+        ))
+
+
+    # ============================================================
+    # 61. HTML SEM LANG NO VALOR ESPERADO
+    # ============================================================
+
+    if html_tag:
+        lang = html_tag.get("lang", "").strip()
+
+        if lang and not any(char.isalpha() for char in lang):
+            issues.append(_issue(
+                check=61,
+                issue_type="erro",
+                severity="médio",
+                category="acessibilidade",
+                message="O atributo lang não possui um código de idioma válido.",
+                problem="O valor de lang não parece representar um idioma.",
+                recommendation="Utilize um código de idioma válido, como pt-BR, en ou es.",
+                example='<html lang="pt-BR">',
+                score=6,
+            ))
+
+
+    # ============================================================
+    # 62. META CHARSET LONGE DO INÍCIO
+    # ============================================================
+
+    if charset:
+        charset_position = html.lower().find("<meta")
+        head_position = html.lower().find("<head")
+
+        if head_position >= 0 and charset_position >= 0:
+            if charset_position - head_position > 1024:
+                issues.append(_issue(
+                    check=62,
+                    issue_type="aviso",
+                    severity="baixo",
+                    category="html",
+                    message="A declaração de charset está distante do início do documento.",
+                    problem="A declaração de charset deve aparecer o mais cedo possível dentro do documento.",
+                    recommendation="Coloque a declaração de charset próxima ao início do <head>.",
+                    example='<meta charset="UTF-8">',
+                    score=3,
+                ))
+
+
+    # ============================================================
+    # 63. META DESCRIPTION COM ESPAÇOS EXCESSIVOS
+    # ============================================================
+
+    if description:
+        description_content = description.get("content", "")
+
+        if description_content != description_content.strip():
+            issues.append(_issue(
+                check=63,
+                issue_type="informação",
+                severity="baixo",
+                category="seo",
+                message="A meta description possui espaços desnecessários.",
+                problem="A descrição contém espaços no início ou no final do conteúdo.",
+                recommendation="Remova espaços desnecessários da meta description.",
+                example='<meta name="description" content="Descrição da página">',
+                score=2,
+            ))
+
+
+    # ============================================================
+    # 64. LINK CANONICAL COM HREF RELATIVO
+    # ============================================================
+
+    if canonical:
+        canonical_href = canonical.get("href", "").strip()
+
+        if canonical_href and not canonical_href.startswith(("http://", "https://")):
+            issues.append(_issue(
+                check=64,
+                issue_type="aviso",
+                severity="baixo",
+                category="seo",
+                message="A URL canonical não é absoluta.",
+                problem="A canonical utiliza um caminho relativo em vez de uma URL completa.",
+                recommendation="Prefira uma URL canonical absoluta.",
+                example='<link rel="canonical" href="https://exemplo.com/pagina">',
+                score=4,
+            ))
+
+
+    # ============================================================
+    # 65. IMAGEM COM SRC DATA MUITO GRANDE
+    # ============================================================
+
+    large_data_images = []
+
+    for image in soup.find_all("img"):
+        src = image.get("src", "").strip()
+
+        if src.startswith("data:") and len(src) > 100000:
+            large_data_images.append(image)
+
+    if large_data_images:
+        issues.append(_issue(
+            check=65,
+            issue_type="aviso",
+            severity="médio",
+            category="performance",
+            message=f"{len(large_data_images)} imagem(ns) possui(em) dados embutidos muito grandes.",
+            problem="Imagens grandes incorporadas diretamente no HTML podem aumentar significativamente o tamanho do documento.",
+            recommendation="Considere utilizar arquivos de imagem externos e otimizados.",
+            example='<img src="/images/logo.webp" alt="Logo">',
+            score=6,
+        ))
+
+
+    # ============================================================
+    # 66. SCRIPT INLINE EM EXCESSO
+    # ============================================================
+
+    inline_scripts = []
+
+    for script in soup.find_all("script"):
+        if not script.get("src") and script.get_text(strip=True):
+            inline_scripts.append(script)
+
+    if len(inline_scripts) > 10:
+        issues.append(_issue(
+            check=66,
+            issue_type="aviso",
+            severity="baixo",
+            category="javascript",
+            message="A página possui muitos scripts inline.",
+            problem=f"Foram encontrados {len(inline_scripts)} scripts inline.",
+            recommendation="Considere organizar scripts em arquivos externos quando isso melhorar manutenção e cache.",
+            example='<script src="/static/app.js"></script>',
+            score=4,
+        ))
+
+
+    # ============================================================
+    # 67. STYLE INLINE EM EXCESSO
+    # ============================================================
+
+    inline_styles = soup.find_all(style=True)
+
+    if len(inline_styles) > 20:
+        issues.append(_issue(
+            check=67,
+            issue_type="aviso",
+            severity="baixo",
+            category="css",
+            message="A página possui muitos estilos inline.",
+            problem=f"Foram encontrados {len(inline_styles)} elementos com estilos inline.",
+            recommendation="Considere centralizar estilos em arquivos CSS quando apropriado.",
+            example='<link rel="stylesheet" href="/static/style.css">',
+            score=4,
+        ))
+
+
+    # ============================================================
+    # 68. ELEMENTOS COM ONCLICK INLINE
+    # ============================================================
+
+    onclick_elements = soup.find_all(attrs={"onclick": True})
+
+    if onclick_elements:
+        issues.append(_issue(
+            check=68,
+            issue_type="aviso",
+            severity="baixo",
+            category="javascript",
+            message=f"{len(onclick_elements)} elemento(s) utilizam onclick inline.",
+            problem="Eventos JavaScript estão diretamente misturados ao HTML.",
+            recommendation="Considere utilizar addEventListener em um arquivo JavaScript.",
+            example="element.addEventListener('click', handler);",
+            score=4,
+        ))
+
+
+    # ============================================================
+    # 69. LINKS SEM TEXTO VISÍVEL
+    # ============================================================
+
+    empty_text_links = []
+
+    for link in soup.find_all("a"):
+        text = link.get_text(" ", strip=True)
+        aria_label = link.get("aria-label", "").strip()
+        title = link.get("title", "").strip()
+
+        if not text and not aria_label and not title and link.find("img") is None:
+            empty_text_links.append(link)
+
+    if empty_text_links:
+        issues.append(_issue(
+            check=69,
+            issue_type="erro",
+            severity="alto",
+            category="acessibilidade",
+            message=f"{len(empty_text_links)} link(s) não possuem texto visível.",
+            problem="Um ou mais links não possuem conteúdo textual ou nome acessível detectável.",
+            recommendation="Adicione texto ou um nome acessível apropriado ao link.",
+            example='<a href="/contato">Contato</a>',
+            score=8,
+        ))
+
+
+    # ============================================================
+    # 70. HEADINGS COM TEXTO VAZIO
+    # ============================================================
+
+    empty_headings = []
+
+    for heading in headings:
+        if not heading.get_text(" ", strip=True):
+            empty_headings.append(heading)
+
+    if empty_headings:
+        issues.append(_issue(
+            check=70,
+            issue_type="erro",
+            severity="médio",
+            category="acessibilidade",
+            message=f"{len(empty_headings)} heading(s) estão vazios.",
+            problem="Um ou mais headings não possuem conteúdo textual.",
+            recommendation="Adicione um título descritivo ou remova o heading vazio.",
+            example="<h2>Seção principal</h2>",
+            score=6,
+        ))
+
+
+    # ============================================================
+    # 71. IMAGENS COM LOADING EAGER DESNECESSÁRIO
+    # ============================================================
+
+    eager_images = []
+
+    for image in soup.find_all("img"):
+        loading = image.get("loading", "").strip().lower()
+
+        if loading == "eager":
+            eager_images.append(image)
+
+    if len(eager_images) > 5:
+        issues.append(_issue(
+            check=71,
+            issue_type="aviso",
+            severity="baixo",
+            category="performance",
+            message=f"{len(eager_images)} imagem(ns) utilizam loading=\"eager\".",
+            problem="Muitas imagens configuradas para carregamento imediato podem aumentar o trabalho inicial da página.",
+            recommendation="Utilize loading=\"lazy\" para imagens que não precisam aparecer imediatamente.",
+            example='<img src="imagem.webp" loading="lazy" alt="Descrição">',
+            score=3,
+        ))
+
+
+    # ============================================================
+    # 72. IMAGENS SEM LOADING LAZY
+    # ============================================================
+
+    images_without_lazy = []
+
+    for image in soup.find_all("img"):
+        src = image.get("src", "").strip()
+
+        if src and not image.get("loading"):
+            images_without_lazy.append(image)
+
+    if len(images_without_lazy) > 5:
+        issues.append(_issue(
+            check=72,
+            issue_type="aviso",
+            severity="baixo",
+            category="performance",
+            message=f"{len(images_without_lazy)} imagem(ns) sem loading definido.",
+            problem="Imagens fora da área inicial podem carregar imediatamente e aumentar o trabalho inicial.",
+            recommendation="Considere loading=\"lazy\" para imagens que não precisam carregar inicialmente.",
+            example='<img src="imagem.webp" loading="lazy" alt="Descrição">',
+            score=3,
+        ))
+
+
+    # ============================================================
+    # 73. SOURCE DE IMAGEM SEM ALT NO PAI IMG
+    # ============================================================
+
+    picture_without_alt = []
+
+    for picture in soup.find_all("picture"):
+        parent_img = picture.find("img")
+
+        if parent_img and not parent_img.has_attr("alt"):
+            picture_without_alt.append(picture)
+
+    if picture_without_alt:
+        issues.append(_issue(
+            check=73,
+            issue_type="erro",
+            severity="alto",
+            category="acessibilidade",
+            message=f"{len(picture_without_alt)} elemento(s) picture possuem img sem alt.",
+            problem="A imagem principal dentro de picture não possui texto alternativo.",
+            recommendation="Adicione alt ao elemento img utilizado como fallback.",
+            example='<picture><source srcset="imagem.webp"><img src="imagem.jpg" alt="Descrição"></picture>',
+            score=8,
+        ))
+
+
+    # ============================================================
+    # 74. AUDIO SEM CONTROLS
+    # ============================================================
+
+    audio_without_controls = []
+
+    for audio in soup.find_all("audio"):
+        if not audio.has_attr("controls"):
+            audio_without_controls.append(audio)
+
+    if audio_without_controls:
+        issues.append(_issue(
+            check=74,
+            issue_type="aviso",
+            severity="médio",
+            category="acessibilidade",
+            message=f"{len(audio_without_controls)} áudio(s) sem controles.",
+            problem="O usuário pode não possuir controles nativos para interagir com o áudio.",
+            recommendation="Adicione controls quando o usuário precisar controlar a reprodução.",
+            example='<audio controls><source src="audio.mp3"></audio>',
+            score=5,
+        ))
+
+
+    # ============================================================
+    # 75. VIDEO SEM CONTROLS
+    # ============================================================
+
+    video_without_controls = []
+
+    for video in soup.find_all("video"):
+        if not video.has_attr("controls"):
+            video_without_controls.append(video)
+
+    if video_without_controls:
+        issues.append(_issue(
+            check=75,
+            issue_type="aviso",
+            severity="médio",
+            category="acessibilidade",
+            message=f"{len(video_without_controls)} vídeo(s) sem controles.",
+            problem="O usuário pode não possuir controles nativos para controlar o vídeo.",
+            recommendation="Adicione controls quando a reprodução precisar ser controlada pelo usuário.",
+            example='<video controls><source src="video.mp4"></video>',
+            score=5,
+        ))
+
+
+    # ============================================================
+    # 76. VIDEO SEM POSTER
+    # ============================================================
+
+    videos_without_poster = []
+
+    for video in soup.find_all("video"):
+        if not video.get("poster"):
+            videos_without_poster.append(video)
+
+    if videos_without_poster:
+        issues.append(_issue(
+            check=76,
+            issue_type="informação",
+            severity="baixo",
+            category="performance",
+            message=f"{len(videos_without_poster)} vídeo(s) sem poster.",
+            problem="O vídeo não define uma imagem de pré-visualização.",
+            recommendation="Considere utilizar poster para definir uma imagem inicial adequada.",
+            example='<video controls poster="capa.webp"></video>',
+            score=2,
+        ))
+
+
+    # ============================================================
+    # 77. FORMULÁRIO SEM BOTÃO DE ENVIO DETECTÁVEL
+    # ============================================================
+
+    forms_without_submit = []
+
+    for form in soup.find_all("form"):
+        submit_button = form.find(
+            "button",
+            attrs={"type": "submit"}
+        )
+
+        input_submit = form.find(
+            "input",
+            attrs={"type": "submit"}
+        )
+
+        if not submit_button and not input_submit:
+            forms_without_submit.append(form)
+
+    if forms_without_submit:
+        issues.append(_issue(
+            check=77,
+            issue_type="aviso",
+            severity="médio",
+            category="acessibilidade",
+            message=f"{len(forms_without_submit)} formulário(s) sem botão de envio detectável.",
+            problem="Não foi encontrado um controle explícito para enviar o formulário.",
+            recommendation="Adicione um botão de submit quando o formulário precisar ser enviado pelo usuário.",
+            example='<button type="submit">Enviar</button>',
+            score=5,
+        ))
+
+
+    # ============================================================
+    # 78. FORMULÁRIO SEM CAMPOS
+    # ============================================================
+
+    empty_forms = []
+
+    for form in soup.find_all("form"):
+        fields = form.find_all(
+            ["input", "textarea", "select", "button"]
+        )
+
+        if not fields:
+            empty_forms.append(form)
+
+    if empty_forms:
+        issues.append(_issue(
+            check=78,
+            issue_type="aviso",
+            severity="baixo",
+            category="html",
+            message=f"{len(empty_forms)} formulário(s) sem campos detectáveis.",
+            problem="O formulário não possui controles de entrada ou ação detectáveis.",
+            recommendation="Adicione os campos necessários ou remova o formulário vazio.",
+            example='<form><input type="email" name="email"></form>',
+            score=3,
+        ))
+
+
+    # ============================================================
+    # 79. TEXTAREA SEM LABEL
+    # ============================================================
+
+    textareas_without_label = []
+
+    for textarea in soup.find_all("textarea"):
+        textarea_id = textarea.get("id", "").strip()
+        aria_label = textarea.get("aria-label", "").strip()
+        aria_labelledby = textarea.get("aria-labelledby", "").strip()
+
+        if aria_label or aria_labelledby:
+            continue
+
+        if not textarea_id:
+            textareas_without_label.append(textarea)
+            continue
+
+        label = soup.find("label", attrs={"for": textarea_id})
+
+        if not label:
+            textareas_without_label.append(textarea)
+
+    if textareas_without_label:
+        issues.append(_issue(
+            check=79,
+            issue_type="erro",
+            severity="alto",
+            category="acessibilidade",
+            message=f"{len(textareas_without_label)} textarea(s) sem label.",
+            problem="Um ou mais campos de texto não possuem identificação acessível detectável.",
+            recommendation="Associe o textarea a uma label ou forneça um nome acessível.",
+            example='<label for="mensagem">Mensagem</label><textarea id="mensagem"></textarea>',
+            score=8,
+        ))
+
+
+    # ============================================================
+    # 80. SELECT SEM LABEL
+    # ============================================================
+
+    selects_without_label = []
+
+    for select in soup.find_all("select"):
+        select_id = select.get("id", "").strip()
+        aria_label = select.get("aria-label", "").strip()
+        aria_labelledby = select.get("aria-labelledby", "").strip()
+
+        if aria_label or aria_labelledby:
+            continue
+
+        if not select_id:
+            selects_without_label.append(select)
+            continue
+
+        label = soup.find("label", attrs={"for": select_id})
+
+        if not label:
+            selects_without_label.append(select)
+
+    if selects_without_label:
+        issues.append(_issue(
+            check=80,
+            issue_type="erro",
+            severity="alto",
+            category="acessibilidade",
+            message=f"{len(selects_without_label)} select(s) sem label.",
+            problem="Um ou mais campos de seleção não possuem identificação acessível detectável.",
+            recommendation="Associe o select a uma label ou forneça um nome acessível.",
+            example='<label for="pais">País</label><select id="pais"></select>',
+            score=8,
+        ))
+
+
+    # ============================================================
+    # 81. INPUT SEM NAME
+    # ============================================================
+
+    inputs_without_name = []
+
+    for input_element in soup.find_all("input"):
+        input_type = input_element.get("type", "").lower()
+
+        if input_type in ("submit", "button", "reset", "hidden"):
+            continue
+
+        if not input_element.get("name"):
+            inputs_without_name.append(input_element)
+
+    if inputs_without_name:
+        issues.append(_issue(
+            check=81,
+            issue_type="aviso",
+            severity="médio",
+            category="html",
+            message=f"{len(inputs_without_name)} input(s) sem name.",
+            problem="Campos sem name podem não ser identificados corretamente no envio de formulários.",
+            recommendation="Adicione um atributo name aos campos que participam do envio do formulário.",
+            example='<input type="email" name="email">',
+            score=5,
+        ))
+
+
+    # ============================================================
+    # 82. INPUT COM AUTOCOMPLETE OFF
+    # ============================================================
+
+    autocomplete_off = []
+
+    for input_element in soup.find_all("input"):
+        autocomplete = input_element.get("autocomplete", "").lower()
+
+        if autocomplete == "off":
+            autocomplete_off.append(input_element)
+
+    if autocomplete_off:
+        issues.append(_issue(
+            check=82,
+            issue_type="informação",
+            severity="baixo",
+            category="acessibilidade",
+            message=f"{len(autocomplete_off)} input(s) utilizam autocomplete=\"off\".",
+            problem="O preenchimento automático foi desativado explicitamente nesses campos.",
+            recommendation="Use autocomplete apropriado quando o preenchimento automático beneficiar o usuário.",
+            example='<input type="email" autocomplete="email">',
+            score=2,
+        ))
+
+
+    # ============================================================
+    # 83. LABEL SEM FOR
+    # ============================================================
+
+    labels_without_for = []
+
+    for label in soup.find_all("label"):
+        if label.get("for"):
+            continue
+
+        if label.find(["input", "textarea", "select"]):
+            continue
+
+        labels_without_for.append(label)
+
+    if labels_without_for:
+        issues.append(_issue(
+            check=83,
+            issue_type="aviso",
+            severity="baixo",
+            category="acessibilidade",
+            message=f"{len(labels_without_for)} label(s) sem associação detectável.",
+            problem="Uma ou mais labels não possuem for nem um campo de formulário associado como descendente.",
+            recommendation="Associe a label ao campo utilizando for e id.",
+            example='<label for="email">E-mail</label><input id="email" type="email">',
+            score=4,
+        ))
+
+
+    # ============================================================
+    # 84. CAMPO COM ID E NAME DIFERENTES
+    # ============================================================
+
+    mismatched_fields = []
+
+    for field in soup.find_all(["input", "textarea", "select"]):
+        field_id = field.get("id")
+        field_name = field.get("name")
+
+        if field_id and field_name and field_id != field_name:
+            mismatched_fields.append(field)
+
+    if len(mismatched_fields) > 5:
+        issues.append(_issue(
+            check=84,
+            issue_type="informação",
+            severity="baixo",
+            category="html",
+            message=f"{len(mismatched_fields)} campo(s) possuem id e name diferentes.",
+            problem="Os atributos id e name utilizam valores diferentes em vários campos.",
+            recommendation="Mantenha uma convenção consistente quando isso facilitar manutenção e integração.",
+            example='<input id="email" name="email" type="email">',
+            score=2,
+        ))
+
+
+    # ============================================================
+    # 85. IFRAME SEM TITLE
+    # ============================================================
+
+    iframes_without_title = []
+
+    for iframe in soup.find_all("iframe"):
+        if not iframe.get("title", "").strip():
+            iframes_without_title.append(iframe)
+
+    if iframes_without_title:
+        issues.append(_issue(
+            check=85,
+            issue_type="erro",
+            severity="alto",
+            category="acessibilidade",
+            message=f"{len(iframes_without_title)} iframe(s) sem title.",
+            problem="O iframe não possui um título que ajude tecnologias assistivas a identificar seu conteúdo.",
+            recommendation="Adicione um title descritivo ao iframe.",
+            example='<iframe title="Mapa da localização"></iframe>',
+            score=8,
+        ))
+
+
+    # ============================================================
+    # 86. IFRAME SEM LOADING LAZY
+    # ============================================================
+
+    iframes_without_lazy = []
+
+    for iframe in soup.find_all("iframe"):
+        if not iframe.get("loading"):
+            iframes_without_lazy.append(iframe)
+
+    if len(iframes_without_lazy) > 2:
+        issues.append(_issue(
+            check=86,
+            issue_type="aviso",
+            severity="baixo",
+            category="performance",
+            message=f"{len(iframes_without_lazy)} iframe(s) sem loading definido.",
+            problem="Conteúdos incorporados podem ser carregados imediatamente mesmo quando estão fora da área inicial.",
+            recommendation="Considere loading=\"lazy\" para iframes que não precisam carregar imediatamente.",
+            example='<iframe loading="lazy" title="Mapa"></iframe>',
+            score=3,
+        ))
+
+
+    # ============================================================
+    # 87. LINK DE ESTILO SEM MEDIA QUANDO HÁ MUITOS
+    # ============================================================
+
+    stylesheet_links = []
+
+    for link in soup.find_all("link"):
+        rel = link.get("rel", [])
+        rel_values = [str(value).lower() for value in rel]
+
+        if "stylesheet" in rel_values:
+            stylesheet_links.append(link)
+
+    if len(stylesheet_links) > 10:
+        issues.append(_issue(
+            check=87,
+            issue_type="aviso",
+            severity="baixo",
+            category="css",
+            message=f"{len(stylesheet_links)} folhas de estilo externas foram encontradas.",
+            problem="Muitas folhas de estilo podem aumentar o trabalho necessário para carregar e processar CSS.",
+            recommendation="Revise as folhas de estilo e remova dependências desnecessárias quando possível.",
+            example='<link rel="stylesheet" href="/static/style.css">',
+            score=3,
+        ))
+
+
+    # ============================================================
+    # 88. CSS INLINE COM IMPORT
+    # ============================================================
+
+    style_imports = []
+
+    for style in soup.find_all("style"):
+        if "@import" in style.get_text().lower():
+            style_imports.append(style)
+
+    if style_imports:
+        issues.append(_issue(
+            check=88,
+            issue_type="aviso",
+            severity="baixo",
+            category="css",
+            message=f"{len(style_imports)} bloco(s) de CSS utilizam @import.",
+            problem="CSS carregado por @import pode criar dependências adicionais durante o carregamento.",
+            recommendation="Prefira organizar e carregar folhas de estilo de forma direta quando apropriado.",
+            example='<link rel="stylesheet" href="/static/style.css">',
+            score=3,
+        ))
+
+
+    # ============================================================
+    # 89. META REFRESH
+    # ============================================================
+
+    meta_refresh = soup.find(
+        "meta",
+        attrs={"http-equiv": lambda value: value and value.lower() == "refresh"}
+    )
+
+    if meta_refresh:
+        issues.append(_issue(
+            check=89,
+            issue_type="aviso",
+            severity="médio",
+            category="acessibilidade",
+            message="A página utiliza meta refresh.",
+            problem="Redirecionamentos automáticos por meta refresh podem prejudicar a experiência e acessibilidade.",
+            recommendation="Prefira redirecionamentos HTTP quando o objetivo for redirecionar a página.",
+            example="HTTP 301 ou 302",
+            score=5,
+        ))
+
+
+    # ============================================================
+    # 90. ELEMENTO BLINK OU MARQUEE
+    # ============================================================
+
+    deprecated_visual_elements = soup.find_all(["blink", "marquee"])
+
+    if deprecated_visual_elements:
+        issues.append(_issue(
+            check=90,
+            issue_type="erro",
+            severity="médio",
+            category="html",
+            message=f"{len(deprecated_visual_elements)} elemento(s) visualmente obsoleto(s) encontrado(s).",
+            problem="Elementos como blink e marquee são obsoletos e podem causar problemas de acessibilidade e compatibilidade.",
+            recommendation="Substitua esses elementos por HTML e CSS modernos.",
+            example='<div class="animacao">Conteúdo</div>',
+            score=6,
+        ))
+
+    return issues
